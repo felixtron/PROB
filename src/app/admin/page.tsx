@@ -1,20 +1,25 @@
 import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
 import { isInstalled } from "@/lib/install"
+import { getCurrentTenant, getInstalledTenant } from "@/lib/tenant"
+
+export const dynamic = "force-dynamic"
 
 export default async function AdminPage() {
   if (!(await isInstalled())) redirect("/install")
 
-  const [organization, users, packages, integrations] = await Promise.all([
-    db.organization.findUnique({ where: { id: "singleton" } }),
-    db.user.count(),
-    db.servicePackage.count(),
-    db.integrationSettings.findUnique({ where: { id: "singleton" } }),
+  const tenant = (await getCurrentTenant()) ?? (await getInstalledTenant())
+  if (!tenant) redirect("/install")
+
+  const [users, packages, integrations] = await Promise.all([
+    db.user.count({ where: { tenantId: tenant.id } }),
+    db.servicePackage.count({ where: { tenantId: tenant.id } }),
+    db.integrationSettings.findUnique({ where: { tenantId: tenant.id } }),
   ])
 
   return (
     <main className="page-shell" style={{ padding: "48px 0" }}>
-      <h1>Admin · {organization?.name}</h1>
+      <h1>Admin · {tenant.name}</h1>
       <p className="muted">Base instalada correctamente. Desde aquí puedes conectar módulos de dominio.</p>
 
       <div className="grid-3" style={{ marginTop: 24 }}>

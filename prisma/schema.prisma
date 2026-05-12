@@ -6,62 +6,134 @@ datasource db {
   provider = "sqlite"
 }
 
+enum TenantStatus {
+  ACTIVE
+  PAUSED
+  DELETED
+}
+
+enum TenantDomainType {
+  PLATFORM_SUBDOMAIN
+  CUSTOM_DOMAIN
+}
+
+enum TenantDomainStatus {
+  PENDING
+  VERIFIED
+  ACTIVE
+  FAILED
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  TENANT_ADMIN
+  STAFF
+  MEMBER
+}
+
+enum ProvisioningJobStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+model Tenant {
+  id                     String                  @id @default(uuid())
+  name                   String
+  slug                   String                  @unique
+  status                 TenantStatus            @default(ACTIVE)
+  primaryDomain          String?
+  projectType            String
+  shortDescription       String?
+  longDescription        String?
+  city                   String?
+  state                  String?
+  country                String?
+  phone                  String?
+  whatsapp               String?
+  email                  String?
+  website                String?
+  currency               String                  @default("MXN")
+  timezone               String                  @default("America/Mexico_City")
+  logoUrl                String?
+  heroImageUrl           String?
+  primaryColor           String                  @default("#e11d48")
+  secondaryColor         String                  @default("#111827")
+  socialLinksJson        String                  @default("{}")
+  featureFlagsJson       String                  @default("{}")
+  stripeAccountId        String?
+  stripeChargesEnabled   Boolean                 @default(false)
+  stripeDetailsSubmitted Boolean                 @default(false)
+  revenueShareRate       Float                   @default(0.1)
+  domains                TenantDomain[]
+  users                  User[]
+  servicePackages        ServicePackage[]
+  integrationSettings    IntegrationSettings?
+  bankSettings           BankSettings?
+  messageTemplates       MessageTemplate[]
+  provisioningJobs       TenantProvisioningJob[]
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+}
+
+model TenantDomain {
+  id                String             @id @default(uuid())
+  tenantId          String
+  hostname          String             @unique
+  type              TenantDomainType
+  status            TenantDomainStatus @default(PENDING)
+  verificationToken String
+  verifiedAt        DateTime?
+  tenant            Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@index([tenantId])
+}
+
 model InstallationState {
   id          String    @id @default("singleton")
+  tenantId    String?
   completed   Boolean   @default(false)
   completedAt DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }
 
-model Organization {
-  id              String   @id @default("singleton")
-  name            String
-  projectType     String
-  shortDescription String?
-  longDescription String?
-  city            String?
-  state           String?
-  country         String?
-  phone           String?
-  whatsapp        String?
-  email           String?
-  website         String?
-  currency        String   @default("MXN")
-  timezone        String   @default("America/Mexico_City")
-  logoUrl         String?
-  heroImageUrl    String?
-  primaryColor    String   @default("#e11d48")
-  secondaryColor  String   @default("#111827")
-  socialLinksJson String   @default("{}")
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-}
-
 model User {
   id        String   @id @default(uuid())
+  tenantId  String?
   name      String?
   email     String   @unique
   password  String
-  role      String   @default("ADMIN")
+  role      UserRole @default(TENANT_ADMIN)
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
 }
 
 model ServicePackage {
-  id              String   @id @default(uuid())
-  name            String
-  description     String?
-  basePrice       Float    @default(0)
-  minDuration     Int      @default(1)
-  includesJson    String   @default("[]")
-  active          Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id           String   @id @default(uuid())
+  tenantId     String?
+  name         String
+  description  String?
+  basePrice    Float    @default(0)
+  minDuration  Int      @default(1)
+  includesJson String   @default("[]")
+  active       Boolean  @default(true)
+  tenant       Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([tenantId])
 }
 
 model IntegrationSettings {
-  id                       String   @id @default("singleton")
+  id                       String   @id @default(uuid())
+  tenantId                 String?  @unique
   stripeEnabled            Boolean  @default(false)
   stripePublishableKeyHint String?
   evolutionEnabled         Boolean  @default(false)
@@ -69,25 +141,98 @@ model IntegrationSettings {
   evolutionInstance        String?
   googleCalendarEnabled    Boolean  @default(false)
   googleCalendarId         String?
+  tenant                   Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   createdAt                DateTime @default(now())
   updatedAt                DateTime @updatedAt
 }
 
 model BankSettings {
-  id          String   @id @default("singleton")
+  id          String   @id @default(uuid())
+  tenantId    String?  @unique
   bankName    String?
   account     String?
   clabe       String?
   beneficiary String?
+  tenant      Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
 
 model MessageTemplate {
   id        String   @id @default(uuid())
-  key       String   @unique
+  tenantId  String?
+  key       String
   label     String
   content   String
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, key])
+  @@index([tenantId])
+}
+
+model TenantTemplate {
+  id                    String                  @id @default(uuid())
+  key                   String                  @unique
+  name                  String
+  description           String?
+  defaultProjectType    String
+  defaultPrimaryColor   String                  @default("#e11d48")
+  defaultSecondaryColor String                  @default("#111827")
+  defaultFeaturesJson   String                  @default("{}")
+  active                Boolean                 @default(true)
+  packages              TenantTemplatePackage[]
+  messages              TenantTemplateMessage[]
+  provisioningJobs      TenantProvisioningJob[]
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+}
+
+model TenantTemplatePackage {
+  id           String         @id @default(uuid())
+  templateId   String
+  name         String
+  description  String?
+  basePrice    Float          @default(0)
+  minDuration  Int            @default(1)
+  includesJson String         @default("[]")
+  template     TenantTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([templateId])
+}
+
+model TenantTemplateMessage {
+  id         String         @id @default(uuid())
+  templateId String
+  key        String
+  label      String
+  content    String
+  template   TenantTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  @@unique([templateId, key])
+  @@index([templateId])
+}
+
+model TenantProvisioningJob {
+  id          String                @id @default(uuid())
+  tenantId    String?
+  templateId  String?
+  status      ProvisioningJobStatus @default(PENDING)
+  summary     String?
+  error       String?
+  inputJson   String                @default("{}")
+  startedAt   DateTime?
+  completedAt DateTime?
+  tenant      Tenant?               @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  template    TenantTemplate?       @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+
+  @@index([tenantId])
+  @@index([templateId])
 }
