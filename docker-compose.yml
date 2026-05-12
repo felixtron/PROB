@@ -1,0 +1,12 @@
+services:
+  prob:
+    build: .
+    container_name: prob-app
+    restart: unless-stopped
+    ports:
+      - "3010:3010"
+    env_file:
+      - .env
+    volumes:
+      - ./prisma:/app/prisma
+      - ./public/uploads:/app/public/uploads

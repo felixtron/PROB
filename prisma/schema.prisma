@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model InstallationState {
+  id          String    @id @default("singleton")
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Organization {
+  id              String   @id @default("singleton")
+  name            String
+  projectType     String
+  shortDescription String?
+  longDescription String?
+  city            String?
+  state           String?
+  country         String?
+  phone           String?
+  whatsapp        String?
+  email           String?
+  website         String?
+  currency        String   @default("MXN")
+  timezone        String   @default("America/Mexico_City")
+  logoUrl         String?
+  heroImageUrl    String?
+  primaryColor    String   @default("#e11d48")
+  secondaryColor  String   @default("#111827")
+  socialLinksJson String   @default("{}")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String?
+  email     String   @unique
+  password  String
+  role      String   @default("ADMIN")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ServicePackage {
+  id              String   @id @default(uuid())
+  name            String
+  description     String?
+  basePrice       Float    @default(0)
+  minDuration     Int      @default(1)
+  includesJson    String   @default("[]")
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model IntegrationSettings {
+  id                       String   @id @default("singleton")
+  stripeEnabled            Boolean  @default(false)
+  stripePublishableKeyHint String?
+  evolutionEnabled         Boolean  @default(false)
+  evolutionBaseUrl         String?
+  evolutionInstance        String?
+  googleCalendarEnabled    Boolean  @default(false)
+  googleCalendarId         String?
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+}
+
+model BankSettings {
+  id          String   @id @default("singleton")
+  bankName    String?
+  account     String?
+  clabe       String?
+  beneficiary String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model MessageTemplate {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  label     String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
