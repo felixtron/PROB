@@ -10,6 +10,9 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
+# Placeholder URL only to satisfy prisma.config.ts during build —
+# real DATABASE_URL is injected at runtime via env_file.
+ENV DATABASE_URL="postgresql://placeholder:placeholder@placeholder:5432/placeholder"
 RUN npx prisma generate
 ENV NODE_OPTIONS="--max-old-space-size=4096"
 RUN npm run build
