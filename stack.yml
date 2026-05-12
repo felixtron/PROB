@@ -1,0 +1,55 @@
+version: "3.9"
+
+services:
+  prob:
+    image: ghcr.io/felixtron/prob:${PROB_TAG:-latest}
+    env_file:
+      - /etc/dokploy/prob.env
+    environment:
+      NEXT_PUBLIC_APP_URL: https://prob.prosuite.pro
+      NODE_ENV: production
+    volumes:
+      - prob-uploads:/app/public/uploads
+    networks:
+      - dokploy-network
+    deploy:
+      replicas: 1
+      update_config:
+        order: start-first
+        failure_action: rollback
+        parallelism: 1
+        delay: 5s
+      restart_policy:
+        condition: on-failure
+        max_attempts: 5
+      resources:
+        limits:
+          memory: 1024M
+        reservations:
+          memory: 256M
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=dokploy-network"
+        - "traefik.http.services.prob.loadbalancer.server.port=3010"
+
+        # HTTP -> HTTPS
+        - "traefik.http.routers.prob-http.rule=Host(`prob.prosuite.pro`) || HostRegexp(`^[a-z0-9-]+\\.prob\\.prosuite\\.pro$`)"
+        - "traefik.http.routers.prob-http.entrypoints=web"
+        - "traefik.http.routers.prob-http.middlewares=prob-redirect-https"
+        - "traefik.http.middlewares.prob-redirect-https.redirectscheme.scheme=https"
+        - "traefik.http.middlewares.prob-redirect-https.redirectscheme.permanent=true"
+
+        # HTTPS router with wildcard cert (dnsChallenge)
+        - "traefik.http.routers.prob.rule=Host(`prob.prosuite.pro`) || HostRegexp(`^[a-z0-9-]+\\.prob\\.prosuite\\.pro$`)"
+        - "traefik.http.routers.prob.entrypoints=websecure"
+        - "traefik.http.routers.prob.tls=true"
+        - "traefik.http.routers.prob.tls.certresolver=letsencrypt-dns"
+        - "traefik.http.routers.prob.tls.domains[0].main=prob.prosuite.pro"
+        - "traefik.http.routers.prob.tls.domains[0].sans=*.prob.prosuite.pro"
+
+networks:
+  dokploy-network:
+    external: true
+
+volumes:
+  prob-uploads:

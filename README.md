@@ -14,21 +14,19 @@ La meta es que funcione como un **install.exe web**:
 
 ## Stack
 
-- Next.js App Router
-- Prisma 7 + SQLite/libSQL adapter
+- Next.js 16 App Router
+- Prisma 7 + Postgres (`@prisma/adapter-pg`)
 - Server Actions
 - Zod
 - bcrypt
-- Docker / Docker Compose
+- Docker / Docker Swarm + Traefik
 
 ## Instalación local
 
 ```bash
 cp .env.example .env
-npm install
-npx prisma generate
-npx prisma db push
-npm run dev
+docker compose up -d --build
+docker compose exec prob npx prisma migrate deploy
 ```
 
 Abrir:
@@ -39,30 +37,20 @@ http://localhost:3010/install
 
 ## Deploy en VPS
 
+Producción se opera en Docker Swarm detrás de Traefik. Ver [docs/INFRA.md](docs/INFRA.md)
+para la guía completa (secretos, DNS, certs wildcard, rollback).
+
+Resumen:
+
 ```bash
-git clone <repo> prob
-cd prob
-cp .env.example .env
-openssl rand -base64 32
-# pegar resultado en AUTH_SECRET
-docker compose build
-docker compose up -d
-docker compose exec prob npx prisma db push --accept-data-loss
+ssh <vps>
+# /etc/dokploy/prob.env ya configurado con DATABASE_URL, AUTH_SECRET, CLOUDFLARE_*
+export PROB_TAG=latest
+docker stack deploy -c /etc/dokploy/prob/stack.yml --with-registry-auth prob
 ```
 
-## Variables
-
-```env
-DATABASE_URL=file:./prisma/dev.db
-AUTH_SECRET=replace-with-openssl-rand-base64-32
-NEXT_PUBLIC_APP_URL=https://tu-dominio.com
-STRIPE_SECRET_KEY=
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
-STRIPE_WEBHOOK_SECRET=
-EVOLUTION_BASE_URL=
-EVOLUTION_API_KEY=
-EVOLUTION_INSTANCE=
-```
+La imagen se construye en GitHub Actions (`.github/workflows/build.yml`) y se publica en
+`ghcr.io/felixtron/prob` con tags `latest`, `sha-<short>`, `branch-<name>` y `vX.Y.Z`.
 
 ## Wizard inicial
 

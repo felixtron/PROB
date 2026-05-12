@@ -1,6 +1,10 @@
 import "dotenv/config"
 import { defineConfig } from "prisma/config"
-import path from "path"
+
+const databaseUrl = process.env.DATABASE_URL
+if (!databaseUrl) {
+  throw new Error("DATABASE_URL must be set (postgresql://user:pass@host:5432/db)")
+}
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
@@ -8,6 +12,6 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env.DATABASE_URL || `file:${path.join(process.cwd(), "prisma", "dev.db")}`,
+    url: databaseUrl,
   },
 })

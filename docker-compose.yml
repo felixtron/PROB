@@ -1,12 +1,32 @@
 services:
+  db:
+    image: postgres:16-alpine
+    container_name: prob-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: prob
+      POSTGRES_PASSWORD: prob
+      POSTGRES_DB: prob_db
+    volumes:
+      - prob-db:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
   prob:
     build: .
     container_name: prob-app
     restart: unless-stopped
+    depends_on:
+      - db
     ports:
       - "3010:3010"
+    environment:
+      DATABASE_URL: postgresql://prob:prob@db:5432/prob_db?schema=public
+      NEXT_PUBLIC_APP_URL: http://localhost:3010
     env_file:
       - .env
     volumes:
-      - ./prisma:/app/prisma
       - ./public/uploads:/app/public/uploads
+
+volumes:
+  prob-db:
