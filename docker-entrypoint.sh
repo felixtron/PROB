@@ -6,6 +6,6 @@ if [ -z "$DATABASE_URL" ]; then
   exit 1
 fi
 
-npx prisma migrate deploy --schema=./prisma/schema.prisma
+node /app/node_modules/prisma/build/index.js migrate deploy --schema=/app/prisma/schema.prisma
 
 exec node server.js
