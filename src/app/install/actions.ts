@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
 import { isInstalled } from "@/lib/install"
+import { isManaged } from "@/lib/platform-mode"
 import { installSchema } from "@/lib/install-schema"
 import { provisionTenant } from "@/lib/tenant-provisioning"
 
@@ -13,6 +14,9 @@ export type InstallActionState = {
 }
 
 export async function runInstallAction(_: InstallActionState, formData: FormData): Promise<InstallActionState> {
+  if (isManaged()) {
+    redirect("/super-admin")
+  }
   if (await isInstalled()) {
     redirect("/admin")
   }

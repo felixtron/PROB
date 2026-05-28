@@ -6,6 +6,7 @@ import {
   addTenantDomainAction,
   updateTenantSettingsAction,
 } from "@/app/super-admin/tenants/[tenantId]/actions"
+import { requireSuperAdminConsole } from "@/lib/auth"
 
 export const dynamic = "force-dynamic"
 
@@ -14,6 +15,8 @@ type TenantDetailPageProps = {
 }
 
 export default async function TenantDetailPage({ params }: TenantDetailPageProps) {
+  await requireSuperAdminConsole()
+
   const { tenantId } = await params
   const tenant = await db.tenant.findUnique({
     where: { id: tenantId },

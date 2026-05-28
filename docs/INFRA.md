@@ -23,6 +23,8 @@ sourced by `stack.yml` via `env_file`. **Never commit this file.**
 
 Required keys:
 
+- `PLATFORM_MODE=managed` (runs the multi-tenant platform with `/super-admin`; omit or set
+  `standalone` for a single self-hosted tenant served by `/install`)
 - `DATABASE_URL=postgresql://prob:<pass>@dokploy-postgres:5432/prob_db?schema=public`
 - `AUTH_SECRET=<openssl rand -base64 32>`
 - `CLOUDFLARE_DNS_API_TOKEN=<token>` (used by Traefik for dnsChallenge — read by Traefik

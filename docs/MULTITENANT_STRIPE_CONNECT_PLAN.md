@@ -10,6 +10,25 @@ The target model follows the working PROL pattern, with one important fix:
 custom domains must be resolved at request time, not only stored in the admin
 panel.
 
+## Deployment Modes
+
+One codebase, two run modes selected by the `PLATFORM_MODE` env var (default
+`standalone`):
+
+- **`managed`** — our SaaS (`prob.prosuite.pro`). Multi-tenant on a shared
+  Postgres, `/super-admin` console, Stripe Connect destination charges with an
+  `application_fee` and per-tenant revenue share. Tenants are created from
+  `/super-admin`; the self-install wizard is disabled (`/install` redirects to
+  `/super-admin`).
+- **`standalone`** — an independent artist self-hosts their own copy. A single
+  tenant is bootstrapped by `/install`, with their own Postgres, domain, and
+  Stripe account. Charges are **direct** (no Connect, no `application_fee`, no
+  revenue share); `/super-admin` returns 404.
+
+Auth applies to both modes (DB-backed sessions). In `managed` the first
+`SUPER_ADMIN` is created once via `/super-admin/setup` (self-locks afterwards);
+in `standalone` the `TENANT_ADMIN` created by `/install` logs in at `/login`.
+
 ## Reference From PROL
 
 PROL already validates the core approach:

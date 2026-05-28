@@ -5,6 +5,7 @@ import { redirect } from "next/navigation"
 import { z } from "zod"
 import { installSchema } from "@/lib/install-schema"
 import { provisionTenant } from "@/lib/tenant-provisioning"
+import { requireSuperAdmin } from "@/lib/auth"
 
 export type CreateTenantActionState = {
   ok: boolean
@@ -16,6 +17,8 @@ export async function createTenantAction(
   _: CreateTenantActionState,
   formData: FormData,
 ): Promise<CreateTenantActionState> {
+  await requireSuperAdmin()
+
   const raw = Object.fromEntries(formData.entries())
   if (!raw.adminPassword) raw.adminPassword = crypto.randomUUID()
 

@@ -102,17 +102,29 @@ model InstallationState {
 }
 
 model User {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   tenantId  String?
   name      String?
-  email     String   @unique
+  email     String    @unique
   password  String
-  role      UserRole @default(TENANT_ADMIN)
-  tenant    Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  role      UserRole  @default(TENANT_ADMIN)
+  tenant    Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sessions  Session[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   @@index([tenantId])
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 model ServicePackage {

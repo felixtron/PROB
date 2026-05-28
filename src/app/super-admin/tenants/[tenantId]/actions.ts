@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { db } from "@/lib/db"
 import { normalizeHostname } from "@/lib/tenant-routing"
+import { requireSuperAdmin } from "@/lib/auth"
 
 const tenantStatusSchema = z.enum(["ACTIVE", "PAUSED", "DELETED"])
 
@@ -19,6 +20,7 @@ const addDomainSchema = z.object({
 })
 
 export async function updateTenantSettingsAction(formData: FormData) {
+  await requireSuperAdmin()
   const parsed = updateTenantSchema.safeParse(Object.fromEntries(formData.entries()))
   if (!parsed.success) return
 
@@ -36,6 +38,7 @@ export async function updateTenantSettingsAction(formData: FormData) {
 }
 
 export async function addTenantDomainAction(formData: FormData) {
+  await requireSuperAdmin()
   const parsed = addDomainSchema.safeParse(Object.fromEntries(formData.entries()))
   if (!parsed.success) return
 
@@ -57,6 +60,7 @@ export async function addTenantDomainAction(formData: FormData) {
 }
 
 export async function activateTenantDomainAction(formData: FormData) {
+  await requireSuperAdmin()
   const tenantId = String(formData.get("tenantId") || "")
   const domainId = String(formData.get("domainId") || "")
   const hostname = normalizeHostname(String(formData.get("hostname") || ""))

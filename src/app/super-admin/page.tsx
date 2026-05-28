@@ -2,10 +2,13 @@ import Link from "next/link"
 import { db } from "@/lib/db"
 import { CreateTenantForm } from "@/components/super-admin/CreateTenantForm"
 import { getActiveTenantTemplates } from "@/lib/tenant-templates"
+import { requireSuperAdminConsole } from "@/lib/auth"
 
 export const dynamic = "force-dynamic"
 
 export default async function SuperAdminPage() {
+  await requireSuperAdminConsole()
+
   const [templates, tenants, recentJobs] = await Promise.all([
     getActiveTenantTemplates(),
     db.tenant.findMany({
