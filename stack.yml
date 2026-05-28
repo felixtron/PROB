@@ -33,14 +33,14 @@ services:
         - "traefik.http.services.prob.loadbalancer.server.port=3010"
 
         # HTTP -> HTTPS
-        - "traefik.http.routers.prob-http.rule=Host(`prob.prosuite.pro`) || HostRegexp(`^[a-z0-9-]+\\.prob\\.prosuite\\.pro$`)"
+        - "traefik.http.routers.prob-http.rule=Host(`prob.prosuite.pro`) || HostRegexp(`^[a-z0-9-]+\\.prob\\.prosuite\\.pro$$`)"
         - "traefik.http.routers.prob-http.entrypoints=web"
         - "traefik.http.routers.prob-http.middlewares=prob-redirect-https"
         - "traefik.http.middlewares.prob-redirect-https.redirectscheme.scheme=https"
         - "traefik.http.middlewares.prob-redirect-https.redirectscheme.permanent=true"
 
         # HTTPS router with wildcard cert (dnsChallenge)
-        - "traefik.http.routers.prob.rule=Host(`prob.prosuite.pro`) || HostRegexp(`^[a-z0-9-]+\\.prob\\.prosuite\\.pro$`)"
+        - "traefik.http.routers.prob.rule=Host(`prob.prosuite.pro`) || HostRegexp(`^[a-z0-9-]+\\.prob\\.prosuite\\.pro$$`)"
         - "traefik.http.routers.prob.entrypoints=websecure"
         - "traefik.http.routers.prob.tls=true"
         - "traefik.http.routers.prob.tls.certresolver=letsencrypt-dns"
