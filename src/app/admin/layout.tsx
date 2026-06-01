@@ -5,6 +5,7 @@ import { getCurrentTenant, getInstalledTenant } from "@/lib/tenant"
 import { isStandalone } from "@/lib/platform-mode"
 import { requireTenantAdmin } from "@/lib/auth"
 import { LogoutButton } from "@/components/auth/LogoutButton"
+import { AdminNav } from "@/components/admin/AdminNav"
 
 export const dynamic = "force-dynamic"
 
@@ -32,7 +33,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <LogoutButton />
         </div>
       </header>
-      {children}
+      <div className="admin-shell">
+        <aside>
+          <AdminNav />
+        </aside>
+        <div>{children}</div>
+      </div>
     </>
   )
 }

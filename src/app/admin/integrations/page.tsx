@@ -1,6 +1,5 @@
 import { headers } from "next/headers"
 import { redirect } from "next/navigation"
-import Link from "next/link"
 import { db } from "@/lib/db"
 import { getCurrentTenant, getInstalledTenant } from "@/lib/tenant"
 import { isManaged, isStandalone } from "@/lib/platform-mode"
@@ -23,12 +22,12 @@ export default async function IntegrationsPage() {
   const webhookUrl = `${protocol}://${host}/api/webhooks/stripe/${tenant.id}`
 
   return (
-    <main className="page-shell" style={{ padding: "32px 0 48px", display: "grid", gap: 24 }}>
+    <div style={{ display: "grid", gap: 24 }}>
       <div>
-        <Link href="/admin" className="muted" style={{ textDecoration: "none", fontSize: 13 }}>
-          ← Admin
-        </Link>
-        <h1 style={{ fontSize: 36, margin: "8px 0" }}>Integraciones</h1>
+        <p className="muted" style={{ textTransform: "uppercase", fontWeight: 800, letterSpacing: 1 }}>
+          Admin
+        </p>
+        <h1 style={{ fontSize: 32, margin: "8px 0" }}>Integraciones</h1>
         <p className="muted" style={{ maxWidth: 720, margin: 0 }}>
           Llaves de Stripe y configuración de Evolution para este tenant. Los secretos se guardan en la base de datos y
           nunca se muestran de vuelta — para reemplazarlos, ingresa uno nuevo.
@@ -47,6 +46,6 @@ export default async function IntegrationsPage() {
           evolutionInstance: settings?.evolutionInstance ?? "",
         }}
       />
-    </main>
+    </div>
   )
 }
