@@ -73,6 +73,7 @@ model Tenant {
   bankSettings           BankSettings?
   messageTemplates       MessageTemplate[]
   provisioningJobs       TenantProvisioningJob[]
+  payments               Payment[]
   createdAt              DateTime                @default(now())
   updatedAt              DateTime                @updatedAt
 }
@@ -127,6 +128,26 @@ model Session {
   @@index([userId])
 }
 
+model Payment {
+  id                      String    @id @default(uuid())
+  tenantId                String
+  tenant                  Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  stripePaymentIntentId   String    @unique
+  stripeCheckoutSessionId String?
+  status                  String
+  amount                  Int
+  currency                String
+  customerEmail           String?
+  customerName            String?
+  description             String?
+  metadataJson            String    @default("{}")
+  paidAt                  DateTime?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  @@index([tenantId])
+}
+
 model ServicePackage {
   id           String   @id @default(uuid())
   tenantId     String?
@@ -148,9 +169,12 @@ model IntegrationSettings {
   tenantId                 String?  @unique
   stripeEnabled            Boolean  @default(false)
   stripePublishableKeyHint String?
+  stripeSecretKey          String?
+  stripeWebhookSecret      String?
   evolutionEnabled         Boolean  @default(false)
   evolutionBaseUrl         String?
   evolutionInstance        String?
+  evolutionApiKey          String?
   googleCalendarEnabled    Boolean  @default(false)
   googleCalendarId         String?
   tenant                   Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)

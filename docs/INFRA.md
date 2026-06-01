@@ -84,6 +84,22 @@ will be issued by the `letsencrypt` resolver (httpChallenge, the original one).
 `docker service rollback prob_prob` reverts to the previous task. For image-level rollback,
 pin `PROB_TAG=sha-<previous>` and re-deploy.
 
+## Stripe webhooks
+
+Each tenant has its own webhook endpoint, scoped by tenant id:
+
+```
+https://<tenant-host>/api/webhooks/stripe/<tenantId>
+```
+
+The tenant id is taken from the URL path; authenticity is enforced by the HMAC signature
+against the tenant's `IntegrationSettings.stripeWebhookSecret`. Configure the endpoint from
+the tenant's Stripe dashboard and paste the webhook signing secret into `/admin/integrations`.
+
+For `standalone` clients (Prisca, etc.) the host is their own domain; for `managed` tenants
+the host is their platform subdomain or custom domain. The webhook route is registered as
+`runtime = "nodejs"` (Stripe SDK is not edge-compatible).
+
 ## Local dev
 
 ```bash

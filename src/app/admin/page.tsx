@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
 import { isInstalled } from "@/lib/install"
@@ -31,14 +32,15 @@ export default async function AdminPage() {
           <strong>Paquetes</strong>
           <p style={{ fontSize: 36, margin: "12px 0 0" }}>{packages}</p>
         </div>
-        <div className="card" style={{ padding: 20 }}>
+        <Link className="card" href="/admin/integrations" style={{ padding: 20, textDecoration: "none", display: "grid", gap: 6 }}>
           <strong>Integraciones</strong>
-          <p className="muted">
+          <p className="muted" style={{ margin: 0 }}>
             Stripe: {integrations?.stripeEnabled ? "activo" : "pendiente"}
             <br />
             Evolution: {integrations?.evolutionEnabled ? "activo" : "pendiente"}
           </p>
-        </div>
+          <span className="muted" style={{ fontSize: 12 }}>Configurar →</span>
+        </Link>
       </div>
     </main>
   )
