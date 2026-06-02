@@ -144,7 +144,12 @@ export default async function VentasPage({ searchParams }: VentasPageProps) {
               {bookings.map((b) => (
                 <tr key={b.id}>
                   <td>
-                    <code style={{ fontSize: 12 }}>{b.shortCode}</code>
+                    <Link
+                      href={`/admin/ventas/${b.id}`}
+                      style={{ textDecoration: "none", color: "var(--primary)", fontWeight: 700 }}
+                    >
+                      <code style={{ fontSize: 12 }}>{b.shortCode}</code>
+                    </Link>
                   </td>
                   <td>
                     <strong>{b.clientName}</strong>
