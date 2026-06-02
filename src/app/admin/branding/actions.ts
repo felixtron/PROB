@@ -33,6 +33,9 @@ const brandingSchema = z.object({
   tiktokUrl: optionalUrl,
   youtubeUrl: optionalUrl,
   spotifyUrl: optionalUrl,
+  legalName: optionalStr,
+  legalRfc: optionalStr,
+  contractLegalText: z.string().trim().max(20000).optional().or(z.literal("")),
 })
 
 export async function updateBrandingAction(
@@ -79,6 +82,9 @@ export async function updateBrandingAction(
       primaryColor: data.primaryColor,
       secondaryColor: data.secondaryColor,
       socialLinksJson: JSON.stringify(socialLinks),
+      legalName: data.legalName || null,
+      legalRfc: data.legalRfc || null,
+      contractLegalText: data.contractLegalText || null,
     },
   })
 

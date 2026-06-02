@@ -62,6 +62,9 @@ model Tenant {
   secondaryColor         String                  @default("#111827")
   socialLinksJson        String                  @default("{}")
   featureFlagsJson       String                  @default("{}")
+  legalName              String?
+  legalRfc               String?
+  contractLegalText      String?
   stripeAccountId        String?
   stripeChargesEnabled   Boolean                 @default(false)
   stripeDetailsSubmitted Boolean                 @default(false)
@@ -81,6 +84,7 @@ model Tenant {
   events                 Event[]
   notifications          Notification[]
   inboxItems             InboxItem[]
+  contracts              Contract[]
   createdAt              DateTime                @default(now())
   updatedAt              DateTime                @updatedAt
 }
@@ -237,6 +241,7 @@ model BookingRequest {
   event           Event?         @relation(fields: [eventId], references: [id], onDelete: SetNull)
   notifications   Notification[]
   inboxItems      InboxItem[]
+  contract        Contract?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
@@ -314,6 +319,28 @@ model Notification {
   @@index([tenantId])
   @@index([tenantId, status])
   @@index([bookingRequestId])
+}
+
+model Contract {
+  id                    String         @id @default(uuid())
+  tenantId              String
+  tenant                Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  bookingRequestId      String         @unique
+  bookingRequest        BookingRequest @relation(fields: [bookingRequestId], references: [id], onDelete: Cascade)
+  shortToken            String         @unique
+  legalSnapshot         String         // contract body with variables already substituted
+  status                String         @default("draft") // draft | signed_admin | signed_client | signed_both | void
+  adminSignerName       String?
+  adminSignedAt         DateTime?
+  clientSignerName      String?
+  clientSignatureDataUrl String?       // reserved for canvas signature in 3e-2
+  clientSignedAt        DateTime?
+  voidedAt              DateTime?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, status])
 }
 
 model InboxItem {

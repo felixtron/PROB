@@ -54,6 +54,9 @@ export default async function BrandingPage() {
           tiktokUrl: social.tiktok ?? "",
           youtubeUrl: social.youtube ?? "",
           spotifyUrl: social.spotify ?? "",
+          legalName: tenant.legalName ?? "",
+          legalRfc: tenant.legalRfc ?? "",
+          contractLegalText: tenant.contractLegalText ?? "",
         }}
         readOnly={{
           slug: tenant.slug,

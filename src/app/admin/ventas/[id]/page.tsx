@@ -4,6 +4,23 @@ import { db } from "@/lib/db"
 import { resolveCurrentTenant } from "@/lib/admin-helpers"
 import { BookingDetailForm } from "@/components/admin/BookingDetailForm"
 import { deleteBookingAction } from "@/app/admin/ventas/actions"
+import { issueContractAction } from "@/app/admin/ventas/[id]/contrato/actions"
+
+const CONTRACT_STATUS_LABELS: Record<string, string> = {
+  draft: "Borrador",
+  signed_admin: "Firmado por prestador",
+  signed_client: "Firmado por cliente",
+  signed_both: "Firmado por ambas partes",
+  void: "Anulado",
+}
+
+const CONTRACT_STATUS_BADGE: Record<string, string> = {
+  draft: "badge warn",
+  signed_admin: "badge warn",
+  signed_client: "badge warn",
+  signed_both: "badge ok",
+  void: "badge err",
+}
 
 export const dynamic = "force-dynamic"
 
@@ -24,7 +41,7 @@ export default async function BookingDetailPage({ params }: DetailPageProps) {
 
   const booking = await db.bookingRequest.findFirst({
     where: { id, tenantId: tenant.id },
-    include: { client: true },
+    include: { client: true, contract: true },
   })
   if (!booking) notFound()
 
@@ -77,6 +94,34 @@ export default async function BookingDetailPage({ params }: DetailPageProps) {
             Eliminar booking
           </button>
         </form>
+      </div>
+
+      <div className="card" style={{ padding: 18, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+        <div>
+          <strong style={{ fontSize: 14 }}>Contrato</strong>
+          <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+            {booking.contract ? (
+              <>
+                <span className={CONTRACT_STATUS_BADGE[booking.contract.status] ?? "badge muted"}>
+                  {CONTRACT_STATUS_LABELS[booking.contract.status] ?? booking.contract.status}
+                </span>
+                {" · "}emitido {booking.contract.createdAt.toISOString().slice(0, 10)}
+              </>
+            ) : (
+              "No emitido"
+            )}
+          </div>
+        </div>
+        {booking.contract ? (
+          <Link href={`/admin/ventas/${booking.id}/contrato`} className="button">
+            Ver / firmar contrato
+          </Link>
+        ) : (
+          <form action={issueContractAction}>
+            <input type="hidden" name="bookingId" value={booking.id} />
+            <button className="button" type="submit">Emitir contrato</button>
+          </form>
+        )}
       </div>
 
       <BookingDetailForm

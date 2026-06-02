@@ -45,6 +45,9 @@ export type BrandingFormProps = {
     tiktokUrl: string
     youtubeUrl: string
     spotifyUrl: string
+    legalName: string
+    legalRfc: string
+    contractLegalText: string
   }
   readOnly: {
     slug: string
@@ -186,6 +189,33 @@ export function BrandingForm({ initialState, readOnly }: BrandingFormProps) {
             <label>Zona horaria</label>
             <input name="timezone" defaultValue={initialState.timezone} />
           </div>
+        </div>
+      </section>
+
+      <section style={{ display: "grid", gap: 14 }}>
+        <h2 style={{ margin: 0, fontSize: 18 }}>Datos legales</h2>
+        <p className="muted" style={{ margin: 0, fontSize: 13 }}>
+          Aparecen en los contratos. Se sustituyen las variables{" "}
+          <code>{"{{tenantLegalName}}"}</code>{" "}y{" "}<code>{"{{tenantLegalRfc}}"}</code>{" "}al emitir.
+        </p>
+        <div className="grid-2">
+          <div className="field">
+            <label>Razón social / nombre legal</label>
+            <input name="legalName" defaultValue={initialState.legalName} placeholder="Si va distinto al nombre comercial" />
+          </div>
+          <div className="field">
+            <label>RFC</label>
+            <input name="legalRfc" defaultValue={initialState.legalRfc} placeholder="XAXX010101000" />
+          </div>
+        </div>
+        <div className="field">
+          <label>Texto del contrato (template, opcional)</label>
+          <textarea
+            name="contractLegalText"
+            defaultValue={initialState.contractLegalText}
+            placeholder="Deja vacío para usar el template por defecto. Soporta {{vars}}: tenantLegalName, tenantLegalRfc, clientName, packageName, eventDate, startTime, endTime, address, city, state, guestCount, baseAmount, depositAmount, balanceAmount, signedDateLabel."
+            style={{ minHeight: 220, fontFamily: "monospace", fontSize: 12 }}
+          />
         </div>
       </section>
 
