@@ -75,6 +75,10 @@ model Tenant {
   provisioningJobs       TenantProvisioningJob[]
   payments               Payment[]
   musicians              Musician[]
+  clientProfiles         ClientProfile[]
+  locations              Location[]
+  bookingRequests        BookingRequest[]
+  events                 Event[]
   createdAt              DateTime                @default(now())
   updatedAt              DateTime                @updatedAt
 }
@@ -130,21 +134,156 @@ model Session {
 }
 
 model Musician {
-  id          String   @id @default(uuid())
-  tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  name        String
-  role        String?
-  instruments String   @default("[]")
-  bio         String?
-  email       String?
-  whatsapp    String?
-  photoUrl    String?
-  active      Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String           @id @default(uuid())
+  tenantId        String
+  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name            String
+  role            String?
+  instruments     String           @default("[]")
+  bio             String?
+  email           String?
+  whatsapp        String?
+  photoUrl        String?
+  active          Boolean          @default(true)
+  eventMusicians  EventMusician[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 
   @@index([tenantId])
+}
+
+model ClientProfile {
+  id              String           @id @default(uuid())
+  tenantId        String
+  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name            String
+  email           String?
+  phone           String?
+  whatsapp        String?
+  company         String?
+  rfc             String?
+  notes           String?
+  city            String?
+  state           String?
+  bookingRequests BookingRequest[]
+  events          Event[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, email])
+}
+
+model Location {
+  id              String   @id @default(uuid())
+  tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name            String
+  address         String?
+  references      String?
+  spaceType       String?
+  logisticsNotes  String?
+  city            String?
+  state           String?
+  mapsLink        String?
+  phone           String?
+  active          Boolean  @default(true)
+  events          Event[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([tenantId])
+}
+
+model BookingRequest {
+  id              String         @id @default(uuid())
+  tenantId        String
+  tenant          Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  shortCode       String         @unique
+  clientId        String?
+  client          ClientProfile? @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  clientName      String
+  clientEmail     String?
+  clientPhone     String?
+  clientWhatsapp  String?
+  packageId       String?
+  packageName     String?
+  guestCount      Int?
+  venueType       String?
+  street          String?
+  houseNumber     String?
+  colonia         String?
+  zipCode         String?
+  address         String?
+  city            String?
+  state           String?
+  mapsLink        String?
+  isOutsideZone   Boolean        @default(false)
+  viaticosAmount  Int            @default(0)
+  requestedDate   DateTime?
+  startTime       String?
+  endTime         String?
+  baseAmount      Int            @default(0)
+  depositAmount   Int            @default(0)
+  paymentMethod   String?
+  status          String         @default("pending")
+  paymentStatus   String         @default("pending")
+  adminNote       String?
+  source          String         @default("manual")
+  eventId         String?        @unique
+  event           Event?         @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, clientId])
+}
+
+model Event {
+  id              String           @id @default(uuid())
+  tenantId        String
+  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  clientId        String?
+  client          ClientProfile?   @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  locationId      String?
+  location        Location?        @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  packageId       String?
+  packageName     String?
+  date            DateTime
+  startTime       String?
+  endTime         String?
+  amount          Int              @default(0)
+  deposit         Int              @default(0)
+  balance         Int              @default(0)
+  depositMethod   String?
+  paymentMethod   String?
+  paymentRef      String?
+  status          String           @default("scheduled")
+  notes           String?
+  bookingRequest  BookingRequest?
+  musicians       EventMusician[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, date])
+}
+
+model EventMusician {
+  id          String   @id @default(uuid())
+  tenantId    String
+  eventId     String
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  musicianId  String
+  musician    Musician @relation(fields: [musicianId], references: [id], onDelete: Cascade)
+  status      String   @default("pending")
+  createdAt   DateTime @default(now())
+
+  @@unique([eventId, musicianId])
+  @@index([tenantId])
+  @@index([musicianId])
 }
 
 model Payment {

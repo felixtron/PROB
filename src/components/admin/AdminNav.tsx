@@ -34,8 +34,8 @@ const GROUPS: AdminNavGroup[] = [
   {
     label: "Clientes",
     items: [
-      { href: "/admin/clientes", label: "Clientes", comingSoon: true },
-      { href: "/admin/ventas", label: "Centro de Ventas", comingSoon: true },
+      { href: "/admin/clientes", label: "Clientes" },
+      { href: "/admin/ventas", label: "Centro de Ventas" },
       { href: "/admin/testimoniales", label: "Testimoniales", comingSoon: true },
     ],
   },
