@@ -74,6 +74,7 @@ model Tenant {
   messageTemplates       MessageTemplate[]
   provisioningJobs       TenantProvisioningJob[]
   payments               Payment[]
+  musicians              Musician[]
   createdAt              DateTime                @default(now())
   updatedAt              DateTime                @updatedAt
 }
@@ -126,6 +127,24 @@ model Session {
   createdAt DateTime @default(now())
 
   @@index([userId])
+}
+
+model Musician {
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name        String
+  role        String?
+  instruments String   @default("[]")
+  bio         String?
+  email       String?
+  whatsapp    String?
+  photoUrl    String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tenantId])
 }
 
 model Payment {

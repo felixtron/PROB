@@ -8,6 +8,7 @@ export type AdminNavItem = { href: string; label: string }
 export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   { href: "/admin", label: "Inicio" },
   { href: "/admin/packages", label: "Paquetes" },
+  { href: "/admin/musicians", label: "Músicos" },
   { href: "/admin/branding", label: "Branding" },
   { href: "/admin/messages", label: "Mensajes" },
   { href: "/admin/bank", label: "Banco" },
