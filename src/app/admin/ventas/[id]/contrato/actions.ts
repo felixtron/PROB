@@ -1,5 +1,6 @@
 "use server"
 
+import { headers } from "next/headers"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { z } from "zod"
@@ -11,6 +12,7 @@ import {
   renderContractTemplate,
   type ContractVars,
 } from "@/lib/contracts"
+import { dispatchNotification } from "@/lib/notifications"
 
 export type ContractActionState = { ok: boolean; message?: string }
 
@@ -67,16 +69,52 @@ export async function issueContractAction(formData: FormData) {
   const template = tenant.contractLegalText?.trim() || DEFAULT_CONTRACT_TEMPLATE
   const snapshot = renderContractTemplate(template, vars)
 
-  await db.contract.create({
+  const shortToken = generateContractToken()
+  const contract = await db.contract.create({
     data: {
       tenantId,
       bookingRequestId: booking.id,
-      shortToken: generateContractToken(),
+      shortToken,
       legalSnapshot: snapshot,
       status: "draft",
     },
   })
 
+  // Auto-WhatsApp the client with the signing link if we have a number to send to.
+  // Failure does NOT block the admin redirect (it's persisted as a Notification
+  // row with status=failed and can be retried from /admin/notificaciones).
+  const recipient = booking.clientWhatsapp || booking.clientPhone
+  if (recipient && recipient.trim().length >= 8) {
+    try {
+      const reqHeaders = await headers()
+      const host = reqHeaders.get("x-tenant-host") ?? reqHeaders.get("host") ?? ""
+      const isLocal = host.startsWith("localhost") || host.startsWith("127.") || host.startsWith("::1")
+      const protocol = isLocal ? "http" : "https"
+      const signUrl = host ? `${protocol}://${host}/firma/${shortToken}` : `/firma/${shortToken}`
+
+      const lines = [
+        `📝 *Contrato listo para firmar — ${tenant.name}*`,
+        ``,
+        `Hola ${booking.clientName.split(" ")[0]}, tu contrato del ${vars.eventDate} (${vars.packageName}) está listo.`,
+        ``,
+        `Léelo y fírmalo aquí (1 minuto):`,
+        signUrl,
+        ``,
+        `Tu firma queda con fecha y hora certificadas. Si tienes dudas, responde por este mismo WhatsApp.`,
+      ]
+      await dispatchNotification({
+        tenantId,
+        type: "contract_issued",
+        recipient,
+        message: lines.join("\n"),
+        bookingRequestId: booking.id,
+      })
+    } catch (error) {
+      console.warn("[contract] dispatch failed", error)
+    }
+  }
+
+  void contract // silence unused if we ever stop using it later
   revalidatePath(`/admin/ventas/${booking.id}`)
   redirect(`/admin/ventas/${booking.id}/contrato`)
 }

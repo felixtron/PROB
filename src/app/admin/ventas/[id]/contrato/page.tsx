@@ -1,9 +1,11 @@
 import Link from "next/link"
+import { headers } from "next/headers"
 import { notFound } from "next/navigation"
 import { db } from "@/lib/db"
 import { resolveCurrentTenant } from "@/lib/admin-helpers"
 import { AdminSignContractForm } from "@/components/admin/AdminSignContractForm"
 import { PrintButton } from "@/components/admin/PrintButton"
+import { CopyLinkButton } from "@/components/admin/CopyLinkButton"
 import { voidContractAction } from "@/app/admin/ventas/[id]/contrato/actions"
 
 export const dynamic = "force-dynamic"
@@ -39,6 +41,12 @@ export default async function ContractPage({ params }: PageProps) {
   if (!booking || !booking.contract) notFound()
   const contract = booking.contract
 
+  const reqHeaders = await headers()
+  const host = reqHeaders.get("x-tenant-host") ?? reqHeaders.get("host") ?? ""
+  const isLocal = host.startsWith("localhost") || host.startsWith("127.") || host.startsWith("::1")
+  const protocol = isLocal ? "http" : "https"
+  const signUrl = host ? `${protocol}://${host}/firma/${contract.shortToken}` : `/firma/${contract.shortToken}`
+
   return (
     <div style={{ display: "grid", gap: 24 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 16, flexWrap: "wrap" }}>
@@ -55,6 +63,9 @@ export default async function ContractPage({ params }: PageProps) {
           </p>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {contract.status !== "void" && !contract.clientSignedAt ? (
+            <CopyLinkButton url={signUrl} />
+          ) : null}
           <PrintButton />
           {contract.status !== "void" && contract.status !== "signed_both" ? (
             <form action={voidContractAction} style={{ display: "inline" }}>
@@ -109,11 +120,24 @@ export default async function ContractPage({ params }: PageProps) {
           <div>
             <strong>EL CLIENTE · firma electrónica:</strong>
             {contract.clientSignedAt ? (
-              <span className="muted">
-                {" "}{contract.clientSignerName} · {contract.clientSignedAt.toISOString().replace("T", " ").slice(0, 19)} UTC
-              </span>
+              <>
+                {" "}
+                <span className="muted">
+                  {contract.clientSignerName} · {contract.clientSignedAt.toISOString().replace("T", " ").slice(0, 19)} UTC
+                </span>
+                {contract.clientSignatureDataUrl ? (
+                  <div style={{ marginTop: 10, background: "#ffffff", padding: 10, borderRadius: 8, display: "inline-block" }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element -- inline data URL */}
+                    <img
+                      src={contract.clientSignatureDataUrl}
+                      alt={`Firma de ${contract.clientSignerName}`}
+                      style={{ maxWidth: 280, maxHeight: 100, display: "block" }}
+                    />
+                  </div>
+                ) : null}
+              </>
             ) : (
-              <span className="muted"> pendiente (firma del cliente llega en Fase 3e-2)</span>
+              <span className="muted"> pendiente · el cliente firma desde el link que le mandamos por WhatsApp</span>
             )}
           </div>
         </div>
