@@ -6,6 +6,7 @@ import { z } from "zod"
 import { db } from "@/lib/db"
 import { resolveCurrentTenant } from "@/lib/admin-helpers"
 import { checkRateLimit, clientIpFromHeaders } from "@/lib/funnel-rate-limit"
+import { dispatchNotification } from "@/lib/notifications"
 
 export type FunnelState = {
   ok: boolean
@@ -143,6 +144,38 @@ export async function submitFunnelAction(
       source: "funnel",
     },
   })
+
+  // Fire admin notification if WhatsApp is configured for this tenant.
+  // We persist the row even on send failure (status=failed) for retry from /admin/notificaciones.
+  if (tenant.whatsapp) {
+    const dateLabel = data.requestedDate
+    const message = [
+      `📥 *Nueva cotización ${booking.shortCode}*`,
+      ``,
+      `Cliente: ${data.clientName}`,
+      `Teléfono: ${data.clientPhone}`,
+      `Paquete: ${pkg.name}`,
+      `Fecha: ${dateLabel} ${data.startTime}-${data.endTime}`,
+      `Lugar: ${data.city}, ${data.state}`,
+      data.notes ? `\nNotas: ${data.notes}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n")
+
+    try {
+      await dispatchNotification({
+        tenantId: tenant.id,
+        type: "funnel_received",
+        recipient: tenant.whatsapp,
+        message,
+        bookingRequestId: booking.id,
+      })
+    } catch (error) {
+      // Never block the redirect on a notification failure — it's already
+      // persisted as a row with status=failed for retry.
+      console.warn("[funnel] dispatch failed", error)
+    }
+  }
 
   redirect(`/cotizar/exito/${booking.shortCode}`)
 }

@@ -20,6 +20,7 @@ export default async function IntegrationsPage() {
   const isLocal = host.startsWith("localhost") || host.startsWith("127.") || host.startsWith("::1")
   const protocol = isLocal ? "http" : "https"
   const webhookUrl = `${protocol}://${host}/api/webhooks/stripe/${tenant.id}`
+  const evolutionWebhookUrl = `${protocol}://${host}/api/webhooks/evolution/${tenant.id}`
 
   return (
     <div style={{ display: "grid", gap: 24 }}>
@@ -37,6 +38,7 @@ export default async function IntegrationsPage() {
       <IntegrationsForm
         mode={isManaged() ? "managed" : "standalone"}
         webhookUrl={webhookUrl}
+        evolutionWebhookUrl={evolutionWebhookUrl}
         initialState={{
           hasStripeSecret: Boolean(settings?.stripeSecretKey),
           hasStripeWebhookSecret: Boolean(settings?.stripeWebhookSecret),

@@ -40,6 +40,7 @@ function ResultMessage({ state }: { state: IntegrationsState }) {
 export type IntegrationsFormProps = {
   mode: "managed" | "standalone"
   webhookUrl: string
+  evolutionWebhookUrl: string
   initialState: {
     hasStripeSecret: boolean
     hasStripeWebhookSecret: boolean
@@ -50,7 +51,7 @@ export type IntegrationsFormProps = {
   }
 }
 
-export function IntegrationsForm({ mode, webhookUrl, initialState }: IntegrationsFormProps) {
+export function IntegrationsForm({ mode, webhookUrl, evolutionWebhookUrl, initialState }: IntegrationsFormProps) {
   const [saveState, saveAction] = useActionState(updateIntegrationsAction, initial)
   const [stripeTestState, stripeTestAction] = useActionState(testStripeAction, initial)
   const [evolutionTestState, evolutionTestAction] = useActionState(testEvolutionAction, initial)
@@ -149,6 +150,25 @@ export function IntegrationsForm({ mode, webhookUrl, initialState }: Integration
               placeholder={initialState.hasEvolutionApiKey ? "•••• (configurada · cambiar)" : ""}
               autoComplete="off"
             />
+          </div>
+          <div className="field">
+            <label>URL del webhook (copia esto en Evolution para recibir mensajes)</label>
+            <code
+              style={{
+                background: "color-mix(in srgb, var(--card) 70%, black 10%)",
+                padding: "10px 12px",
+                borderRadius: 8,
+                fontSize: 12,
+                wordBreak: "break-all",
+                border: "1px solid var(--border)",
+              }}
+            >
+              {evolutionWebhookUrl}
+            </code>
+            <span className="muted" style={{ fontSize: 11 }}>
+              Evolution debe enviar el header <code>apikey</code> con el mismo valor configurado arriba —
+              lo verificamos antes de aceptar cualquier mensaje (timing-safe compare).
+            </span>
           </div>
         </section>
 

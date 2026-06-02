@@ -27,8 +27,9 @@ const GROUPS: AdminNavGroup[] = [
   {
     label: "Mensajería",
     items: [
-      { href: "/admin/inbox", label: "Bandeja de Entrada", comingSoon: true },
-      { href: "/admin/messages", label: "Centro de Mensajería" },
+      { href: "/admin/inbox", label: "Bandeja de Entrada" },
+      { href: "/admin/notificaciones", label: "Centro de Mensajería" },
+      { href: "/admin/messages", label: "Plantillas" },
     ],
   },
   {
