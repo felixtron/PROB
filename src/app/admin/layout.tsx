@@ -1,4 +1,3 @@
-import Link from "next/link"
 import { redirect } from "next/navigation"
 import { isInstalled } from "@/lib/install"
 import { getCurrentTenant, getInstalledTenant } from "@/lib/tenant"
@@ -20,14 +19,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const user = await requireTenantAdmin(tenant.id)
 
   return (
-    <>
+    <div className="admin-theme" style={{ minHeight: "100vh", background: "var(--background)" }}>
       <header
         className="page-shell"
         style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 0", gap: 16 }}
       >
-        <Link href="/admin" style={{ textDecoration: "none", fontWeight: 800 }}>
-          {tenant.name}
-        </Link>
+        <span style={{ fontWeight: 800 }}>{tenant.name}</span>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <span className="muted">{user.email}</span>
           <LogoutButton />
@@ -35,10 +32,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       </header>
       <div className="admin-shell">
         <aside>
-          <AdminNav />
+          <AdminNav logoUrl={tenant.logoUrl} tenantName={tenant.name} />
         </aside>
         <div>{children}</div>
       </div>
-    </>
+    </div>
   )
 }
