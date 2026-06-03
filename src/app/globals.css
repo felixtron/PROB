@@ -1,11 +1,51 @@
+@import "tailwindcss";
+
 /* ============================================================
-   PROB — Tema visual estilo Vendetta
-   - :root = dark (front público, /login, /install, /super-admin)
-   - .admin-theme = light (activado solo dentro de /admin/*)
+   PROB unified design tokens (admin + landing)
+
+   PROB owns the platform chrome (auth, admin, funnel, contracts)
+   with oklch-based dark default + light .admin-theme override.
+
+   The landing (Priscilla Castro) brings noir/gold/ivory/velvet
+   palette + 3 serif fonts. It scopes its body styling to .landing-shell
+   so it never bleeds into platform routes.
    ============================================================ */
 
+@theme inline {
+  /* Surface tokens (mapped to CSS vars below) */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+
+  /* Landing palette — used as Tailwind utility colors (bg-noir, text-gold, ...) */
+  --color-noir: #080808;
+  --color-gold: #C5A059;
+  --color-ivory: #F5F5F0;
+  --color-velvet: #4A0404;
+
+  /* Fonts — five families coexist. Each layout selects via class. */
+  --font-sans: var(--font-inter);
+  --font-heading: var(--font-montserrat);
+  --font-serif: var(--font-playfair);
+  --font-jazzy: var(--font-syne);
+  --font-deco: var(--font-marcellus);
+
+  --radius: 0.5rem;
+}
+
 :root {
-  /* DARK (Vendetta front: negro + rojo) */
+  /* DARK (Vendetta-derived default for /login, /install, /super-admin, /cotizar, /firma) */
   --background: oklch(0 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.12 0 0);
@@ -13,7 +53,7 @@
   --popover: oklch(0.12 0 0);
   --popover-foreground: oklch(0.985 0 0);
 
-  --primary: oklch(0.6 0.25 29); /* Vendetta Red */
+  --primary: oklch(0.6 0.25 29);
   --primary-foreground: oklch(0.985 0 0);
 
   --secondary: oklch(0.20 0 0);
@@ -29,14 +69,12 @@
   --input-bg: #0b1220;
   --ring: oklch(0.6 0.25 29);
 
-  --radius: 0.5rem;
   --sidebar-bg: oklch(0 0 0);
   --sidebar-active-bg: oklch(0.6 0.25 29 / 0.12);
   --sidebar-active-fg: oklch(0.9 0.15 29);
 }
 
 .admin-theme {
-  /* LIGHT (Vendetta admin: blanco + magenta) */
   --background: oklch(0.96 0 0);
   --foreground: oklch(0 0 0);
   --card: oklch(1 0 0);
@@ -44,7 +82,7 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0 0 0);
 
-  --primary: oklch(0.6 0.25 0); /* Magenta ~#E91E63 */
+  --primary: oklch(0.6 0.25 0);
   --primary-foreground: oklch(1 0 0);
 
   --secondary: oklch(0.98 0 0);
@@ -79,6 +117,10 @@ body {
   letter-spacing: -0.01em;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 h1, h2, h3 {
   font-family: var(--font-heading, var(--font-sans, inherit));
   letter-spacing: -0.02em;
@@ -95,12 +137,31 @@ select {
   font: inherit;
 }
 
+/* ── Landing scope override ──
+   When the landing wraps content with .landing-shell, body-level styling
+   switches to the noir/ivory palette. Platform pages don't include this
+   class so they remain unaffected. */
+.landing-shell {
+  background: var(--color-noir);
+  color: var(--color-ivory);
+  font-family: var(--font-jazzy, var(--font-sans));
+  selection: var(--color-gold);
+}
+
+.landing-shell ::selection {
+  background-color: var(--color-gold);
+  color: #ffffff;
+}
+
+/* ============================================================
+   Platform helper classes (auth/admin/funnel chrome)
+   ============================================================ */
+
 .page-shell {
   width: min(1120px, calc(100% - 32px));
   margin: 0 auto;
 }
 
-/* ── Cards ────────────────────────────────────────── */
 .card {
   background: var(--card);
   color: var(--card-foreground);
@@ -108,7 +169,6 @@ select {
   border-radius: var(--radius);
 }
 
-/* ── Fields ──────────────────────────────────────── */
 .field {
   display: grid;
   gap: 8px;
@@ -151,7 +211,6 @@ select {
   outline-offset: 1px;
 }
 
-/* ── Grids ───────────────────────────────────────── */
 .grid-2 {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -164,7 +223,6 @@ select {
   gap: 16px;
 }
 
-/* ── Buttons ─────────────────────────────────────── */
 .button {
   border: 0;
   border-radius: 8px;
@@ -191,7 +249,6 @@ select {
   color: var(--muted-foreground);
 }
 
-/* ── Admin shell + sidebar agrupada ───────────────── */
 .admin-shell {
   width: min(1240px, calc(100% - 32px));
   margin: 0 auto;
@@ -287,7 +344,6 @@ select {
   display: none;
 }
 
-/* ── Badges (estado) ──────────────────────────────── */
 .badge {
   display: inline-block;
   padding: 2px 8px;
@@ -318,7 +374,6 @@ select {
   color: var(--muted-foreground);
 }
 
-/* ── Tables ──────────────────────────────────────── */
 .table {
   width: 100%;
   border-collapse: collapse;
@@ -344,7 +399,6 @@ select {
   border-bottom: 0;
 }
 
-/* ── Dashboard helpers ────────────────────────────── */
 .kpi-card {
   display: grid;
   gap: 8px;
@@ -382,7 +436,6 @@ select {
   font-weight: 700;
 }
 
-/* ── Animaciones (preparadas para front en Fase 3d) ─ */
 @keyframes shimmer-text {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
@@ -403,7 +456,6 @@ select {
   display: inline-block;
 }
 
-/* ── Scrollbar custom ─────────────────────────────── */
 .custom-scrollbar::-webkit-scrollbar { width: 6px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb {
@@ -414,7 +466,6 @@ select {
   background: rgba(0, 0, 0, 0.2);
 }
 
-/* ── Mobile ───────────────────────────────────────── */
 @media (max-width: 760px) {
   .grid-2,
   .grid-3 {
@@ -474,4 +525,152 @@ select {
   .admin-nav-desktop {
     display: none;
   }
+}
+
+/* ============================================================
+   Landing component classes (Priscilla Castro)
+   ============================================================ */
+
+@layer components {
+  .jazzy-title {
+    font-family: var(--font-serif);
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: -0.05em;
+    line-height: 0.85;
+  }
+
+  .deco-title {
+    font-family: var(--font-deco);
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--color-gold);
+  }
+
+  .text-outline {
+    -webkit-text-stroke: 1px rgba(255, 255, 255, 0.1);
+    color: transparent;
+  }
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.02);
+    backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 60px;
+    padding: 48px;
+    transition: all 700ms;
+    will-change: transform;
+    transform: translateZ(0);
+  }
+
+  .glass-card:hover {
+    border-color: rgba(197, 160, 89, 0.2);
+  }
+
+  .section-fade-top {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 8rem;
+    background: linear-gradient(to bottom, var(--color-noir), rgba(8, 8, 8, 0.8) 50%, transparent);
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .section-fade-bottom {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 8rem;
+    background: linear-gradient(to top, var(--color-noir), rgba(8, 8, 8, 0.8) 50%, transparent);
+    z-index: 2;
+    pointer-events: none;
+  }
+}
+
+/* Subtle noise overlay used as body::before in the landing */
+.landing-shell::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
+  opacity: 0.03;
+  background-image: radial-gradient(circle at center, rgba(255, 255, 255, 0.05) 0%, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Auroras (decorative gradient blobs) */
+.aurora-container {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.aurora-blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(80px);
+  opacity: 0.2;
+  transform: translate3d(0, 0, 0);
+}
+
+.aurora-1 {
+  background: radial-gradient(circle at center, rgba(197, 160, 89, 0.25) 0%, transparent 70%);
+  top: -10%;
+  left: -10%;
+  width: 80vw;
+  height: 80vw;
+}
+
+.aurora-2 {
+  background: radial-gradient(circle at center, rgba(197, 160, 89, 0.2) 0%, transparent 70%);
+  bottom: -15%;
+  right: -10%;
+  width: 90vw;
+  height: 90vw;
+}
+
+.aurora-3 {
+  background: radial-gradient(circle at center, rgba(197, 160, 89, 0.1) 0%, transparent 70%);
+  top: 30%;
+  right: 20%;
+  width: 70vw;
+  height: 70vw;
+}
+
+.jazzy-grid {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  opacity: 0.08;
+  background-image:
+    linear-gradient(rgba(197, 160, 89, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(197, 160, 89, 0.03) 1px, transparent 1px);
+  background-size: 120px 120px;
+  mask-image: radial-gradient(circle at center, black, transparent 90%);
+}
+
+.optimize-gpu {
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+.animate-spotify-aurora { animation: spotify-aurora 10s infinite ease-in-out; }
+.animate-spotify-bar { animation: spotify-bar 2s infinite ease-in-out; }
+
+@keyframes spotify-aurora {
+  0%, 100% { opacity: 0.05; transform: scale(1); }
+  50% { opacity: 0.1; transform: scale(1.1); }
+}
+
+@keyframes spotify-bar {
+  0%, 100% { transform: scaleY(0.1); }
+  50% { transform: scaleY(0.7); }
 }
