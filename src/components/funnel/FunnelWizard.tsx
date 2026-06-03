@@ -68,7 +68,13 @@ function SubmitButton() {
   )
 }
 
-export function FunnelWizard({ packages }: { packages: FunnelPackage[] }) {
+export function FunnelWizard({
+  packages,
+  initialPackageId,
+}: {
+  packages: FunnelPackage[]
+  initialPackageId?: string
+}) {
   const [step, setStep] = useState(0)
   const [state, formAction] = useActionState(submitFunnelAction, initial)
   const [hint, setHint] = useState<string | null>(null)
@@ -128,7 +134,7 @@ export function FunnelWizard({ packages }: { packages: FunnelPackage[] }) {
 
       <div className="card" style={{ padding: "32px 28px" }}>
         <div hidden={step !== 0}>
-          <Step1Package packages={packages} />
+          <Step1Package packages={packages} initialSelectedId={initialPackageId} />
         </div>
         <div hidden={step !== 1}>
           <Step2Location />

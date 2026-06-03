@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 import { Play, X } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import Container from "@/components/landing/ui/Container";
 import JazzyDecorations from "@/components/landing/ui/JazzyDecorations";
 
@@ -12,6 +13,7 @@ interface ShowFormat {
   image: string;
   desc: string;
   videoUrl?: string;
+  cotizarSlug?: string;
 }
 
 function ShowFormatCard({ 
@@ -72,6 +74,17 @@ function ShowFormatCard({
           <h3 className="text-2xl font-serif text-ivory mb-1 italic">{format.title}</h3>
           <p className="text-gold/60 text-[10px] uppercase tracking-widest">{format.desc}</p>
         </div>
+        {/* Funnel CTA — sits in the bottom-right of the card with stopPropagation so the
+            card click (video play) doesn't fire. Pre-selects the package in /cotizar. */}
+        <Link
+          href={format.cotizarSlug ? `/cotizar?package=${format.cotizarSlug}` : "/cotizar"}
+          onClick={(e) => e.stopPropagation()}
+          aria-label={`Cotizar ${format.title}`}
+          className="absolute bottom-6 right-6 z-40 pointer-events-auto inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-gold text-noir text-[10px] font-black uppercase tracking-[0.18em] shadow-[0_8px_24px_rgba(197,160,89,0.35)] hover:scale-105 hover:bg-gold/90 transition-all duration-300"
+        >
+          Cotizar
+          <span aria-hidden className="text-[12px]">→</span>
+        </Link>
       </div>
     </motion.div>
   );
@@ -135,23 +148,26 @@ export default function PressKitCTA() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full mt-12">
             {[
-              { 
-                title: "Essence Duo", 
-                image: "/Fotos Dueto/dueto.webp", 
+              {
+                title: "Essence Duo",
+                image: "/Fotos Dueto/dueto.webp",
                 desc: "Voz y Piano / Guitarra",
-                videoUrl: "https://www.youtube.com/embed/JMH-DxvdVwo?autoplay=1"
+                videoUrl: "https://www.youtube.com/embed/JMH-DxvdVwo?autoplay=1",
+                cotizarSlug: "essence-duo"
               },
-              { 
-                title: "Signature Trio", 
-                image: "/Fotos trio/Trio foto.webp", 
+              {
+                title: "Signature Trio",
+                image: "/Fotos trio/Trio foto.webp",
                 desc: "Piano, Percusión y Voz",
-                videoUrl: "https://www.youtube.com/embed/IFqnbhnn3sk?autoplay=1"
+                videoUrl: "https://www.youtube.com/embed/IFqnbhnn3sk?autoplay=1",
+                cotizarSlug: "signature-trio"
               },
-              { 
-                title: "Luxury Band", 
-                image: "/Fotos banda/pris full band.webp", 
+              {
+                title: "Luxury Band",
+                image: "/Fotos banda/pris full band.webp",
                 desc: "Show Funk, Soul y Disco",
-                videoUrl: "https://www.youtube.com/embed/zz3doIqjwtM?autoplay=1"
+                videoUrl: "https://www.youtube.com/embed/zz3doIqjwtM?autoplay=1",
+                cotizarSlug: "luxury-band"
               },
             ].map((format, i) => (
               <ShowFormatCard 

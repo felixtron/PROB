@@ -9,8 +9,14 @@ export type FunnelPackage = {
   includes: string[]
 }
 
-export function Step1Package({ packages }: { packages: FunnelPackage[] }) {
-  const [selectedId, setSelectedId] = useState<string>("")
+export function Step1Package({
+  packages,
+  initialSelectedId,
+}: {
+  packages: FunnelPackage[]
+  initialSelectedId?: string
+}) {
+  const [selectedId, setSelectedId] = useState<string>(initialSelectedId ?? "")
 
   return (
     <div style={{ display: "grid", gap: 24 }}>
