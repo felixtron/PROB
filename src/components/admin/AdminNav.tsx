@@ -7,6 +7,7 @@ type AdminNavItem = {
   href: string
   label: string
   comingSoon?: boolean
+  exact?: boolean
 }
 
 type AdminNavGroup = {
@@ -37,14 +38,15 @@ const GROUPS: AdminNavGroup[] = [
     items: [
       { href: "/admin/clientes", label: "Clientes" },
       { href: "/admin/ventas", label: "Centro de Ventas" },
-      { href: "/admin/testimoniales", label: "Testimoniales", comingSoon: true },
+      { href: "/admin/testimoniales", label: "Testimoniales" },
     ],
   },
   {
     label: "Producción",
     items: [
       { href: "/admin/musicians", label: "Banda y Suplentes" },
-      { href: "/admin/repertorio", label: "Repertorio" },
+      { href: "/admin/repertorio", label: "Repertorio", exact: true },
+      { href: "/admin/repertorio/setlists", label: "Setlists" },
     ],
   },
   {
@@ -53,7 +55,7 @@ const GROUPS: AdminNavGroup[] = [
   },
   {
     label: "Logística",
-    items: [{ href: "/admin/proveedores", label: "Proveedores", comingSoon: true }],
+    items: [{ href: "/admin/proveedores", label: "Proveedores" }],
   },
   {
     label: "Ajustes",
@@ -82,9 +84,10 @@ const GROUPS: AdminNavGroup[] = [
 export function AdminNav({ logoUrl, tenantName }: { logoUrl: string | null; tenantName: string }) {
   const pathname = usePathname() || ""
 
-  function isActive(href: string) {
-    if (href === "/admin") return pathname === "/admin"
-    return pathname === href || pathname.startsWith(`${href}/`)
+  function isActive(item: AdminNavItem) {
+    if (item.href === "/admin") return pathname === "/admin"
+    if (item.exact) return pathname === item.href
+    return pathname === item.href || pathname.startsWith(`${item.href}/`)
   }
 
   return (
@@ -111,7 +114,7 @@ export function AdminNav({ logoUrl, tenantName }: { logoUrl: string | null; tena
                 </li>
               ) : (
                 <li key={item.href}>
-                  <Link href={item.href} className={isActive(item.href) ? "active" : undefined}>
+                  <Link href={item.href} className={isActive(item) ? "active" : undefined}>
                     {item.label}
                   </Link>
                 </li>
@@ -134,7 +137,7 @@ export function AdminNav({ logoUrl, tenantName }: { logoUrl: string | null; tena
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`admin-nav-item${isActive(item.href) ? " active" : ""}`}
+                  className={`admin-nav-item${isActive(item) ? " active" : ""}`}
                 >
                   {item.label}
                 </Link>

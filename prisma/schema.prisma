@@ -86,6 +86,9 @@ model Tenant {
   inboxItems             InboxItem[]
   contracts              Contract[]
   songs                  Song[]
+  setlists               Setlist[]
+  providers              Provider[]
+  reviews                Review[]
   createdAt              DateTime                @default(now())
   updatedAt              DateTime                @updatedAt
 }
@@ -328,23 +331,97 @@ model Notification {
 }
 
 model Song {
-  id           String   @id @default(uuid())
-  tenantId     String
-  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  title        String
-  artist       String?
-  genre        String?
-  language     String?
-  era          String?
-  durationMin  Int?
-  songKey      String?
-  notes        String?
-  active       Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id            String         @id @default(uuid())
+  tenantId      String
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  title         String
+  artist        String?
+  genre         String?
+  language      String?
+  era           String?
+  durationMin   Int?
+  songKey       String?
+  notes         String?
+  active        Boolean        @default(true)
+  setlistSongs  SetlistSong[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
   @@index([tenantId])
   @@index([tenantId, active])
+}
+
+model Setlist {
+  id          String        @id @default(uuid())
+  tenantId    String
+  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  active      Boolean       @default(true)
+  songs       SetlistSong[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, active])
+}
+
+model SetlistSong {
+  id         String   @id @default(uuid())
+  tenantId   String
+  setlistId  String
+  setlist    Setlist  @relation(fields: [setlistId], references: [id], onDelete: Cascade)
+  songId     String
+  song       Song     @relation(fields: [songId], references: [id], onDelete: Cascade)
+  position   Int      @default(0)
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  @@unique([setlistId, songId])
+  @@index([tenantId])
+  @@index([setlistId, position])
+}
+
+model Provider {
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name        String
+  category    String?
+  contactName String?
+  email       String?
+  phone       String?
+  whatsapp    String?
+  city        String?
+  baseRate    Int?
+  currency    String?
+  notes       String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, active])
+  @@index([tenantId, category])
+}
+
+model Review {
+  id         String    @id @default(uuid())
+  tenantId   String
+  tenant     Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  clientName String
+  eventTitle String?
+  eventDate  DateTime?
+  rating     Int       @default(5)
+  quote      String
+  avatarUrl  String?
+  source     String    @default("manual")
+  published  Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, published])
 }
 
 model Contract {

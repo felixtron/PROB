@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { db } from "@/lib/db"
 import { resolveCurrentTenant } from "@/lib/admin-helpers"
 import { SongForm } from "@/components/admin/SongForm"
@@ -6,10 +7,13 @@ export const dynamic = "force-dynamic"
 
 export default async function RepertorioPage() {
   const tenant = await resolveCurrentTenant()
-  const songs = await db.song.findMany({
-    where: { tenantId: tenant.id },
-    orderBy: [{ active: "desc" }, { title: "asc" }],
-  })
+  const [songs, setlistsCount] = await Promise.all([
+    db.song.findMany({
+      where: { tenantId: tenant.id },
+      orderBy: [{ active: "desc" }, { title: "asc" }],
+    }),
+    db.setlist.count({ where: { tenantId: tenant.id } }),
+  ])
 
   const activeCount = songs.filter((s) => s.active).length
   const totalMinutes = songs
@@ -18,15 +22,20 @@ export default async function RepertorioPage() {
 
   return (
     <div style={{ display: "grid", gap: 24 }}>
-      <div>
-        <p className="muted" style={{ textTransform: "uppercase", fontWeight: 800, letterSpacing: 1, margin: 0 }}>
-          Admin
-        </p>
-        <h1 style={{ fontSize: 32, margin: "8px 0 4px" }}>Repertorio</h1>
-        <p className="muted" style={{ margin: 0 }}>
-          Catálogo de canciones del proyecto. {activeCount} activa{activeCount === 1 ? "" : "s"}
-          {totalMinutes > 0 ? ` · ~${totalMinutes} min totales` : ""}.
-        </p>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 12 }}>
+        <div>
+          <p className="muted" style={{ textTransform: "uppercase", fontWeight: 800, letterSpacing: 1, margin: 0 }}>
+            Producción
+          </p>
+          <h1 style={{ fontSize: 32, margin: "8px 0 4px" }}>Repertorio</h1>
+          <p className="muted" style={{ margin: 0 }}>
+            Catálogo de canciones del proyecto. {activeCount} activa{activeCount === 1 ? "" : "s"}
+            {totalMinutes > 0 ? ` · ~${totalMinutes} min totales` : ""}.
+          </p>
+        </div>
+        <Link href="/admin/repertorio/setlists" className="button" style={{ padding: "10px 16px", fontSize: 14 }}>
+          Ver setlists{setlistsCount > 0 ? ` (${setlistsCount})` : ""} →
+        </Link>
       </div>
 
       <SongForm
