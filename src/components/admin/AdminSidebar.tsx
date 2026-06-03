@@ -1,0 +1,322 @@
+"use client"
+
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { useState, useEffect } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import {
+  Users, Calendar, Settings, FileText, Music,
+  LayoutDashboard, TrendingUp, ShoppingBag, Image as LucideImage,
+  Truck, Mic, Shield, Bell, Inbox, ChevronDown, ChevronRight,
+  BarChart3, Wallet, XCircle, BookOpen, History, MessageSquare,
+  Receipt, KeyRound, Palette, Plug,
+} from "lucide-react"
+import { cn } from "@/lib/utils"
+import { LogoutButton } from "@/components/auth/LogoutButton"
+
+interface SidebarItem {
+  name: string
+  href: string
+  icon: any
+  adminOnly?: boolean
+  badgeCount?: number
+}
+
+interface SidebarSection {
+  title: string
+  id: string
+  icon: any
+  items: SidebarItem[]
+  placeholder?: boolean
+}
+
+interface AdminSidebarProps {
+  user: { name?: string | null; email?: string | null; role?: string | null }
+  pendingInbox?: number
+  logoUrl?: string | null
+  tenantName?: string
+}
+
+export function AdminSidebar({ user, pendingInbox = 0, logoUrl, tenantName = "PROB" }: AdminSidebarProps) {
+  const pathname = usePathname()
+  const isAdmin = user.role === "SUPER_ADMIN" || user.role === "TENANT_ADMIN"
+
+  const [mounted, setMounted] = useState(false)
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    operacion: true,
+    comms: true,
+  })
+
+  useEffect(() => {
+    setMounted(true)
+    const saved = localStorage.getItem("admin_sidebar_expanded")
+    if (saved) {
+      try {
+        setExpandedSections(JSON.parse(saved))
+      } catch {}
+    }
+  }, [])
+
+  useEffect(() => {
+    if (mounted) {
+      localStorage.setItem("admin_sidebar_expanded", JSON.stringify(expandedSections))
+    }
+  }, [expandedSections, mounted])
+
+  const toggleSection = (id: string) => {
+    setExpandedSections((prev) => ({ ...prev, [id]: !prev[id] }))
+  }
+
+  const sections: SidebarSection[] = [
+    {
+      title: "GESTIÓN", id: "operacion", icon: LayoutDashboard,
+      items: [
+        { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
+        { name: "Shows / Eventos", href: "/admin/eventos", icon: Calendar },
+        { name: "Agenda de Ensayos", href: "/admin/ensayos", icon: Mic, adminOnly: true },
+        { name: "Eventualidades", href: "/admin/eventualidades", icon: TrendingUp },
+      ],
+    },
+    {
+      title: "MENSAJERÍA", id: "comms", icon: Bell,
+      items: [
+        { name: "Bandeja de Entrada", href: "/admin/inbox", icon: Inbox, badgeCount: pendingInbox },
+        { name: "Log de mensajes", href: "/admin/inbox?tab=log", icon: History },
+        { name: "Centro de Mensajería", href: "/admin/notificaciones", icon: MessageSquare, adminOnly: true },
+        { name: "Plantillas", href: "/admin/messages", icon: FileText, adminOnly: true },
+      ],
+    },
+    {
+      title: "CLIENTES", id: "crm", icon: Users,
+      items: [
+        { name: "Clientes", href: "/admin/clientes", icon: Users },
+        { name: "Centro de Ventas", href: "/admin/ventas", icon: ShoppingBag },
+        { name: "Testimoniales", href: "/admin/testimoniales", icon: FileText, adminOnly: true },
+      ],
+    },
+    {
+      title: "PRODUCCIÓN", id: "talento", icon: Music,
+      items: [
+        { name: "Banda y Suplentes", href: "/admin/musicians", icon: Users, adminOnly: true },
+        { name: "Repertorio", href: "/admin/repertorio", icon: Music, adminOnly: true },
+        { name: "Setlists", href: "/admin/repertorio/setlists", icon: Music, adminOnly: true },
+      ],
+    },
+    {
+      title: "OFERTA", id: "servicios", icon: ShoppingBag,
+      items: [
+        { name: "Catálogo de Paquetes", href: "/admin/packages", icon: ShoppingBag, adminOnly: true },
+      ],
+    },
+    {
+      title: "LOGÍSTICA", id: "logistica", icon: Truck,
+      items: [
+        { name: "Proveedores", href: "/admin/proveedores", icon: Truck },
+      ],
+    },
+    {
+      title: "MARKETING", id: "marketing", icon: LucideImage,
+      items: [
+        { name: "Banners & Galería", href: "/admin/media", icon: LucideImage, adminOnly: true },
+      ],
+    },
+    {
+      title: "AJUSTES", id: "configuracion", icon: Settings,
+      items: [
+        { name: "Administradores", href: "/admin/users", icon: Shield, adminOnly: true },
+        { name: "Branding", href: "/admin/branding", icon: Palette, adminOnly: true },
+        { name: "Banco", href: "/admin/bank", icon: Wallet, adminOnly: true },
+        { name: "Integraciones", href: "/admin/integrations", icon: Plug, adminOnly: true },
+      ],
+    },
+    {
+      title: "PAGOS", id: "pagos", icon: Receipt,
+      items: [
+        { name: "Pagos", href: "/admin/payments", icon: Receipt },
+        { name: "Seguridad", href: "/admin/security", icon: KeyRound, adminOnly: true },
+      ],
+    },
+    { title: "FINANZAS", id: "finanzas", icon: Wallet, placeholder: true, items: [] },
+    { title: "MÉTRICAS", id: "analytics", icon: BarChart3, placeholder: true, items: [] },
+  ]
+
+  if (!mounted) return null
+
+  return (
+    <>
+      {/* Mobile Toggle */}
+      <div className="md:hidden fixed top-4 left-4 z-[60]">
+        <button
+          onClick={() => setExpandedSections((prev) => ({ ...prev, mobile: !prev.mobile }))}
+          className="p-3 rounded-xl bg-gradient-to-br from-[#3c3c3c] to-[#1a1a1a] text-white shadow-xl border border-white/10"
+        >
+          {expandedSections.mobile ? <XCircle className="w-6 h-6" /> : <Inbox className="w-6 h-6" />}
+        </button>
+      </div>
+
+      <AnimatePresence>
+        {expandedSections.mobile && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setExpandedSections((prev) => ({ ...prev, mobile: false }))}
+            className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[50]"
+          />
+        )}
+      </AnimatePresence>
+
+      <aside
+        className={cn(
+          "bg-gradient-to-br from-[#3c3c3c] to-[#1a1a1a] flex flex-col rounded-2xl shadow-2xl overflow-hidden border-none shrink-0 transition-all duration-300 z-[55]",
+          "fixed md:relative md:flex h-[calc(100vh-2rem)]",
+          "w-64",
+          expandedSections.mobile ? "left-4 opacity-100" : "-left-72 opacity-0 md:left-0 md:opacity-100",
+        )}
+      >
+        {/* Header — tenant logo or name */}
+        <div className="p-8 flex flex-col items-center justify-center shrink-0 border-b border-white/5 bg-black/20">
+          <Link href="/" className="flex items-center gap-2" aria-label={tenantName}>
+            <div className="h-14 flex items-center">
+              {logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={logoUrl} alt={tenantName} className="h-full w-auto object-contain" />
+              ) : (
+                <span className="text-white font-black text-2xl tracking-[0.2em] uppercase">{tenantName}</span>
+              )}
+            </div>
+          </Link>
+          <div className="mt-2 text-[9px] text-white/30 font-black uppercase tracking-[0.4em]">
+            Panel de Control
+          </div>
+        </div>
+
+        <div className="px-4 mb-4">
+          <div className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+        </div>
+
+        <nav className="flex-1 overflow-y-auto px-4 space-y-4 custom-scrollbar-white pb-6 touch-pan-y">
+          {sections.map((section) => {
+            const visibleItems = section.items.filter((item) => !item.adminOnly || isAdmin)
+            if (visibleItems.length === 0 && !section.placeholder) return null
+
+            const isExpanded = expandedSections[section.id]
+            const SectionIcon = section.icon
+            const isAnyChildActive = visibleItems.some((item) => {
+              const itemPath = item.href.split("?")[0]
+              return pathname === itemPath
+            })
+
+            return (
+              <div key={section.id} className="space-y-1">
+                <button
+                  onClick={() => toggleSection(section.id)}
+                  className={cn(
+                    "w-full flex items-center justify-between px-3 py-3 text-[10px] font-black tracking-widest uppercase transition-all rounded-xl group mb-1",
+                    isAnyChildActive
+                      ? "bg-[#E91E63] text-white shadow-lg shadow-pink-500/30"
+                      : section.placeholder
+                      ? "text-white/20 cursor-not-allowed"
+                      : "text-white/60 hover:text-white hover:bg-white/5",
+                  )}
+                  disabled={section.placeholder}
+                >
+                  <div className="flex items-center gap-2">
+                    <SectionIcon
+                      className={cn(
+                        "w-4 h-4",
+                        isAnyChildActive
+                          ? "text-white"
+                          : isExpanded
+                          ? "text-[#E91E63]"
+                          : "text-[#E91E63]/70 group-hover:text-[#E91E63]",
+                      )}
+                    />
+                    {section.title}
+                  </div>
+                  {!section.placeholder &&
+                    (isExpanded ? (
+                      <ChevronDown className={cn("w-3.5 h-3.5", isAnyChildActive ? "text-white/70" : "text-white/40")} />
+                    ) : (
+                      <ChevronRight
+                        className={cn("w-3.5 h-3.5", isAnyChildActive ? "text-white/70" : "text-white/40")}
+                      />
+                    ))}
+                </button>
+
+                <AnimatePresence initial={false}>
+                  {isExpanded && !section.placeholder && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2, ease: "easeInOut" }}
+                      className="overflow-hidden"
+                    >
+                      <div
+                        className={cn(
+                          "space-y-1 mt-1 ml-1 pl-3 mb-2",
+                          isAnyChildActive ? "border-l-2 border-[#E91E63]/30" : "border-l border-white/10",
+                        )}
+                      >
+                        {visibleItems.map((item) => {
+                          const Icon = item.icon
+                          const itemPath = item.href.split("?")[0]
+                          const isActive = pathname === itemPath
+
+                          return (
+                            <Link
+                              key={item.href}
+                              href={item.href}
+                              onClick={() => setExpandedSections((prev) => ({ ...prev, mobile: false }))}
+                              className={cn(
+                                "flex items-center gap-3 px-4 py-3 text-xs font-bold rounded-xl transition-all group relative",
+                                isActive
+                                  ? "bg-white/10 text-white"
+                                  : "text-white/50 hover:text-white hover:bg-white/5",
+                              )}
+                            >
+                              <Icon
+                                className={cn(
+                                  "w-4 h-4 shrink-0 transition-transform text-white",
+                                  isActive
+                                    ? "opacity-100 scale-110"
+                                    : "opacity-40 group-hover:opacity-100 group-hover:scale-110",
+                                )}
+                              />
+                              <span className="flex-1 truncate uppercase tracking-tight">{item.name}</span>
+                              {isActive && (
+                                <motion.div
+                                  layoutId="activeSub"
+                                  className="absolute left-0 w-1 h-4 bg-[#E91E63] rounded-full"
+                                />
+                              )}
+                              {item.badgeCount ? (
+                                <span className="px-1.5 py-0.5 rounded-full bg-[#E91E63] text-[10px] font-bold text-white">
+                                  {item.badgeCount}
+                                </span>
+                              ) : null}
+                            </Link>
+                          )
+                        })}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )
+          })}
+        </nav>
+
+        <div className="p-4 mt-auto border-t border-white/5">
+          {user.email ? (
+            <div className="text-[10px] text-white/40 uppercase tracking-wider mb-3 truncate px-1">
+              {user.email}
+            </div>
+          ) : null}
+          <LogoutButton variant="sidebar" />
+        </div>
+      </aside>
+    </>
+  )
+}

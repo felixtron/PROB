@@ -3,10 +3,8 @@ import { isInstalled } from "@/lib/install"
 import { getCurrentTenant, getInstalledTenant } from "@/lib/tenant"
 import { isStandalone } from "@/lib/platform-mode"
 import { requireTenantAdmin } from "@/lib/auth"
-import { getAdminTheme } from "@/lib/admin-theme"
-import { LogoutButton } from "@/components/auth/LogoutButton"
-import { AdminNav } from "@/components/admin/AdminNav"
-import { ThemeToggle } from "@/components/admin/ThemeToggle"
+import { db } from "@/lib/db"
+import { AdminSidebar } from "@/components/admin/AdminSidebar"
 
 export const dynamic = "force-dynamic"
 
@@ -19,28 +17,26 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (!tenant) redirect("/install")
 
   const user = await requireTenantAdmin(tenant.id)
-  const theme = await getAdminTheme()
-  const wrapperClass = theme === "light" ? "admin-theme" : undefined
+
+  const pendingInbox = await db.inboxItem
+    .count({ where: { tenantId: tenant.id, status: "pending" } })
+    .catch(() => 0)
 
   return (
-    <div className={wrapperClass} style={{ minHeight: "100vh", background: "var(--background)" }}>
-      <header
-        className="page-shell"
-        style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 0", gap: 16 }}
-      >
-        <span style={{ fontWeight: 800 }}>{tenant.name}</span>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span className="muted">{user.email}</span>
-          <ThemeToggle theme={theme} />
-          <LogoutButton />
-        </div>
-      </header>
-      <div className="admin-shell">
-        <aside>
-          <AdminNav logoUrl={tenant.logoUrl} tenantName={tenant.name} />
-        </aside>
-        <div>{children}</div>
-      </div>
+    <div className="admin-theme flex min-h-screen bg-background text-foreground p-4 gap-4">
+      {/* Red top bar (Vendetta signature element) */}
+      <div className="fixed top-0 left-0 right-0 h-1 bg-red-600 z-[99999] pointer-events-none" />
+
+      <AdminSidebar
+        user={{ name: user.name, email: user.email, role: user.role }}
+        pendingInbox={pendingInbox}
+        logoUrl={tenant.logoUrl}
+        tenantName={tenant.name}
+      />
+
+      <main className="flex-1 overflow-auto rounded-3xl bg-transparent">
+        <div className="h-full">{children}</div>
+      </main>
     </div>
   )
 }
