@@ -1,6 +1,8 @@
+import { ShoppingBag, CheckCircle2, Eye } from "lucide-react"
 import { db } from "@/lib/db"
 import { resolveCurrentTenant } from "@/lib/admin-helpers"
 import { PackageForm } from "@/components/admin/PackageForm"
+import { Card } from "@/components/ui/card"
 
 export const dynamic = "force-dynamic"
 
@@ -20,37 +22,64 @@ export default async function PackagesPage() {
     orderBy: [{ active: "desc" }, { basePrice: "asc" }],
   })
 
+  const activeCount = packages.filter((p) => p.active).length
+
+  const kpis = [
+    { label: "Total", value: packages.length, icon: ShoppingBag, accent: "text-primary" },
+    { label: "Activos", value: activeCount, icon: CheckCircle2, accent: "text-green-600" },
+    { label: "Visibles al cliente", value: activeCount, icon: Eye, accent: "text-blue-600" },
+  ]
+
   return (
-    <div style={{ display: "grid", gap: 24 }}>
-      <div>
-        <p className="muted" style={{ textTransform: "uppercase", fontWeight: 800, letterSpacing: 1 }}>
-          Admin
-        </p>
-        <h1 style={{ fontSize: 32, margin: "8px 0" }}>Paquetes</h1>
-        <p className="muted" style={{ margin: 0 }}>
-          Servicios o paquetes que ofreces a clientes. Solo los marcados como activos se mostrarán cuando
-          implementemos el flujo de compra.
+    <div className="p-8 bg-background min-h-full">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-foreground tracking-tight">Catálogo de Paquetes</h1>
+        <p className="text-muted-foreground mt-1 text-sm">
+          Servicios o paquetes que ofreces a clientes. Solo los marcados como activos aparecen en el flujo de compra.
         </p>
       </div>
 
-      <PackageForm
-        mode="create"
-        initialValues={{
-          name: "",
-          description: "",
-          basePrice: 0,
-          minDuration: 1,
-          includes: "",
-          active: true,
-        }}
-      />
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+        {kpis.map((kpi) => {
+          const Icon = kpi.icon
+          return (
+            <Card key={kpi.label} className="bg-card border-border/40 p-4 rounded-xl shadow-sm">
+              <div className="flex items-center gap-2 text-muted-foreground mb-2">
+                <Icon className={`w-4 h-4 ${kpi.accent}`} />
+                <span className="text-xs font-bold uppercase tracking-wider">{kpi.label}</span>
+              </div>
+              <div className="text-2xl font-black text-foreground">{kpi.value}</div>
+            </Card>
+          )
+        })}
+      </div>
+
+      <div className="mb-6">
+        <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground mb-3">
+          Nuevo paquete
+        </h2>
+        <PackageForm
+          mode="create"
+          initialValues={{
+            name: "",
+            description: "",
+            basePrice: 0,
+            minDuration: 1,
+            includes: "",
+            active: true,
+          }}
+        />
+      </div>
 
       {packages.length === 0 ? (
-        <div className="card" style={{ padding: 24 }}>
-          <p className="muted" style={{ margin: 0 }}>Aún no hay paquetes. Crea el primero arriba.</p>
-        </div>
+        <Card className="p-6 bg-white">
+          <p className="text-muted-foreground text-sm m-0">Aún no hay paquetes. Crea el primero arriba.</p>
+        </Card>
       ) : (
-        <div style={{ display: "grid", gap: 16 }}>
+        <div className="space-y-4">
+          <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">
+            Catálogo · {packages.length}
+          </h2>
           {packages.map((p) => (
             <PackageForm
               key={p.id}

@@ -23,13 +23,10 @@ export default async function IntegrationsPage() {
   const evolutionWebhookUrl = `${protocol}://${host}/api/webhooks/evolution/${tenant.id}`
 
   return (
-    <div style={{ display: "grid", gap: 24 }}>
-      <div>
-        <p className="muted" style={{ textTransform: "uppercase", fontWeight: 800, letterSpacing: 1 }}>
-          Admin
-        </p>
-        <h1 style={{ fontSize: 32, margin: "8px 0" }}>Integraciones</h1>
-        <p className="muted" style={{ maxWidth: 720, margin: 0 }}>
+    <div className="p-8 bg-background min-h-full">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-foreground tracking-tight">Integraciones</h1>
+        <p className="text-muted-foreground mt-1 text-sm max-w-2xl">
           Llaves de Stripe y configuración de Evolution para este tenant. Los secretos se guardan en la base de datos y
           nunca se muestran de vuelta — para reemplazarlos, ingresa uno nuevo.
         </p>

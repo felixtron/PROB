@@ -1,13 +1,36 @@
 import Link from "next/link"
+import { Inbox, MessageSquare, AlertTriangle, CheckCircle2 } from "lucide-react"
 import { db } from "@/lib/db"
 import { resolveCurrentTenant } from "@/lib/admin-helpers"
+import { Card } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 
 export const dynamic = "force-dynamic"
 
-const STATUS_BADGE: Record<string, string> = {
-  pending: "badge warn",
-  responded: "badge ok",
-  archived: "badge muted",
+function statusBadgeClass(status: string): string {
+  switch (status) {
+    case "responded":
+      return "text-green-600 border-green-600/40 bg-green-600/5"
+    case "archived":
+      return "bg-muted text-muted-foreground"
+    case "pending":
+    default:
+      return "text-yellow-600 border-yellow-600/40 bg-yellow-600/5"
+  }
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  pending: "Pendiente",
+  responded: "Respondido",
+  archived: "Archivado",
 }
 
 function truncate(s: string, max = 120): string {
@@ -17,83 +40,109 @@ function truncate(s: string, max = 120): string {
 
 export default async function InboxPage() {
   const tenant = await resolveCurrentTenant()
-  const items = await db.inboxItem.findMany({
-    where: { tenantId: tenant.id },
-    orderBy: { receivedAt: "desc" },
-    take: 100,
-    include: { client: { select: { name: true } } },
-  })
+  const [items, integrations] = await Promise.all([
+    db.inboxItem.findMany({
+      where: { tenantId: tenant.id },
+      orderBy: { receivedAt: "desc" },
+      take: 100,
+      include: { client: { select: { name: true } } },
+    }),
+    db.integrationSettings.findUnique({ where: { tenantId: tenant.id } }),
+  ])
 
-  const integrations = await db.integrationSettings.findUnique({ where: { tenantId: tenant.id } })
   const evolutionConfigured = Boolean(
     integrations?.evolutionBaseUrl && integrations.evolutionInstance && integrations.evolutionApiKey,
   )
 
+  const pendingCount = items.filter((i) => i.status === "pending").length
+  const respondedCount = items.filter((i) => i.status === "responded").length
+
+  const kpis = [
+    { label: "Total", value: items.length, icon: Inbox, accent: "text-primary" },
+    { label: "Pendientes", value: pendingCount, icon: AlertTriangle, accent: "text-yellow-600" },
+    { label: "Respondidos", value: respondedCount, icon: CheckCircle2, accent: "text-green-600" },
+    { label: "WhatsApp", value: evolutionConfigured ? "Activo" : "Apagado", icon: MessageSquare, accent: evolutionConfigured ? "text-green-600" : "text-muted-foreground" },
+  ]
+
   return (
-    <div style={{ display: "grid", gap: 24 }}>
-      <div>
-        <p className="muted" style={{ textTransform: "uppercase", fontWeight: 800, letterSpacing: 1, margin: 0 }}>
-          Admin
-        </p>
-        <h1 style={{ fontSize: 32, margin: "8px 0 4px" }}>Bandeja de Entrada</h1>
-        <p className="muted" style={{ margin: 0 }}>
+    <div className="p-8 bg-background min-h-full">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-foreground tracking-tight">Bandeja de Entrada</h1>
+        <p className="text-muted-foreground mt-1 text-sm">
           Mensajes entrantes por WhatsApp (Evolution). Vinculamos al CRM cuando reconocemos el número.
         </p>
       </div>
 
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        {kpis.map((kpi) => {
+          const Icon = kpi.icon
+          return (
+            <Card key={kpi.label} className="bg-card border-border/40 p-4 rounded-xl shadow-sm">
+              <div className="flex items-center gap-2 text-muted-foreground mb-2">
+                <Icon className={`w-4 h-4 ${kpi.accent}`} />
+                <span className="text-xs font-bold uppercase tracking-wider">{kpi.label}</span>
+              </div>
+              <div className="text-2xl font-black text-foreground">{kpi.value}</div>
+            </Card>
+          )
+        })}
+      </div>
+
       {!evolutionConfigured ? (
-        <div className="card" style={{ padding: 16, borderColor: "rgba(251,191,36,0.4)" }}>
-          <p style={{ margin: 0, fontSize: 13, color: "#fcd34d" }}>
+        <div className="mb-6 rounded-2xl border border-yellow-500/40 bg-yellow-500/5 p-4 flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-yellow-600 shrink-0 mt-0.5" />
+          <p className="text-sm text-yellow-700">
             Evolution no está configurado.{" "}
-            <Link href="/admin/integrations" style={{ textDecoration: "underline" }}>
+            <Link href="/admin/integrations" className="underline font-bold">
               Configúralo en Integraciones
-            </Link>
-            {" "}para recibir mensajes aquí.
+            </Link>{" "}
+            para recibir mensajes aquí.
           </p>
         </div>
       ) : null}
 
       {items.length === 0 ? (
-        <div className="card" style={{ padding: 24 }}>
-          <p className="muted" style={{ margin: 0 }}>
+        <Card className="p-6 bg-white">
+          <p className="text-muted-foreground text-sm m-0">
             Sin mensajes entrantes aún. Cuando alguien escriba al WhatsApp configurado, aparecerá aquí.
           </p>
-        </div>
+        </Card>
       ) : (
-        <div className="card" style={{ padding: 4, overflowX: "auto" }}>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Recibido</th>
-                <th>De</th>
-                <th>Mensaje</th>
-                <th>Cliente</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
+        <Card className="bg-white overflow-x-auto py-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Recibido</TableHead>
+                <TableHead>De</TableHead>
+                <TableHead>Mensaje</TableHead>
+                <TableHead>Cliente</TableHead>
+                <TableHead>Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {items.map((i) => (
-                <tr key={i.id}>
-                  <td style={{ whiteSpace: "nowrap" }}>
+                <TableRow key={i.id}>
+                  <TableCell className="whitespace-nowrap font-mono text-xs">
                     {i.receivedAt.toISOString().slice(0, 16).replace("T", " ")}
-                  </td>
-                  <td>
-                    <div>
-                      <strong>{i.senderName ?? "Desconocido"}</strong>
-                      <br />
-                      <code className="muted" style={{ fontSize: 11 }}>{i.phoneNumber}</code>
+                  </TableCell>
+                  <TableCell>
+                    <div className="space-y-0.5">
+                      <div className="font-bold text-sm">{i.senderName ?? "Desconocido"}</div>
+                      <div className="text-muted-foreground text-xs font-mono">{i.phoneNumber}</div>
                     </div>
-                  </td>
-                  <td style={{ maxWidth: 480 }}>{truncate(i.message)}</td>
-                  <td>{i.client?.name ?? "—"}</td>
-                  <td>
-                    <span className={STATUS_BADGE[i.status] ?? "badge muted"}>{i.status}</span>
-                  </td>
-                </tr>
+                  </TableCell>
+                  <TableCell className="max-w-[480px] text-sm">{truncate(i.message)}</TableCell>
+                  <TableCell className="text-sm">{i.client?.name ?? "—"}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className={statusBadgeClass(i.status)}>
+                      {STATUS_LABELS[i.status] || i.status}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+          </Table>
+        </Card>
       )}
     </div>
   )

@@ -9,13 +9,10 @@ export default async function BankPage() {
   const settings = await db.bankSettings.findUnique({ where: { tenantId: tenant.id } })
 
   return (
-    <div style={{ display: "grid", gap: 24 }}>
-      <div>
-        <p className="muted" style={{ textTransform: "uppercase", fontWeight: 800, letterSpacing: 1 }}>
-          Admin
-        </p>
-        <h1 style={{ fontSize: 32, margin: "8px 0" }}>Banco</h1>
-        <p className="muted" style={{ margin: 0 }}>
+    <div className="p-8 bg-background min-h-full">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-foreground tracking-tight">Banco</h1>
+        <p className="text-muted-foreground mt-1 text-sm">
           Datos bancarios para depósitos manuales. Se muestran al cliente cuando elige pago por transferencia.
         </p>
       </div>
