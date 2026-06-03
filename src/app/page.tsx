@@ -3,6 +3,7 @@ import Script from "next/script"
 import { redirect } from "next/navigation"
 import { isManaged } from "@/lib/platform-mode"
 import { resolveCurrentTenant } from "@/lib/admin-helpers"
+import { db } from "@/lib/db"
 import { LandingPage } from "@/components/landing/LandingPage"
 
 export const dynamic = "force-dynamic"
@@ -129,9 +130,44 @@ export default async function HomePage() {
     redirect("/super-admin")
   }
 
-  // Resolve the tenant as a side-effect to confirm setup. The landing is
-  // hardcoded for Prisca for now; future tenants will override via tenant fields.
-  await resolveCurrentTenant()
+  const tenant = await resolveCurrentTenant()
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  const [upcomingShows, testimonials] = await Promise.all([
+    db.bandEvent.findMany({
+      where: { tenantId: tenant.id, published: true, date: { gte: today }, status: { not: "cancelled" } },
+      orderBy: { date: "asc" },
+      take: 8,
+    }),
+    db.review.findMany({
+      where: { tenantId: tenant.id, published: true },
+      orderBy: { createdAt: "desc" },
+      take: 6,
+    }),
+  ])
+
+  const upcomingShowsForClient = upcomingShows.map((s) => ({
+    id: s.id,
+    title: s.title,
+    kind: s.kind,
+    dateIso: s.date.toISOString(),
+    venueName: s.venueName,
+    city: s.city,
+    country: s.country,
+    ticketUrl: s.ticketUrl,
+    publicNotes: s.publicNotes,
+  }))
+
+  const testimonialsForClient = testimonials.map((r) => ({
+    id: r.id,
+    clientName: r.clientName,
+    eventTitle: r.eventTitle,
+    rating: r.rating,
+    quote: r.quote,
+    avatarUrl: r.avatarUrl,
+  }))
 
   return (
     <>
@@ -140,7 +176,7 @@ export default async function HomePage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <LandingPage />
+      <LandingPage upcomingShows={upcomingShowsForClient} testimonials={testimonialsForClient} />
     </>
   )
 }

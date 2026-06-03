@@ -20,9 +20,9 @@ const GROUPS: AdminNavGroup[] = [
     label: "Gestión",
     items: [
       { href: "/admin", label: "Inicio" },
-      { href: "/admin/eventos", label: "Shows / Eventos", comingSoon: true },
-      { href: "/admin/ensayos", label: "Agenda de Ensayos", comingSoon: true },
-      { href: "/admin/eventualidades", label: "Eventualidades", comingSoon: true },
+      { href: "/admin/eventos", label: "Shows / Eventos" },
+      { href: "/admin/ensayos", label: "Agenda de Ensayos" },
+      { href: "/admin/eventualidades", label: "Eventualidades" },
     ],
   },
   {

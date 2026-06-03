@@ -12,6 +12,28 @@ import TimelineBio from "@/components/landing/sections/TimelineBio";
 import ShowList from "@/components/landing/sections/ShowList";
 import CinemaSection from "@/components/landing/sections/CinemaSection";
 import PressKitCTA from "@/components/landing/sections/PressKitCTA";
+import Testimonials from "@/components/landing/sections/Testimonials";
+
+export type LandingShow = {
+  id: string;
+  title: string;
+  kind: string;
+  dateIso: string;
+  venueName: string | null;
+  city: string | null;
+  country: string | null;
+  ticketUrl: string | null;
+  publicNotes: string | null;
+};
+
+export type LandingTestimonial = {
+  id: string;
+  clientName: string;
+  eventTitle: string | null;
+  rating: number;
+  quote: string;
+  avatarUrl: string | null;
+};
 
 // UI Components
 import Container from "@/components/landing/ui/Container";
@@ -64,7 +86,13 @@ function DeferredSpotify({ src, height = "100%", title }: { src: string; height?
   );
 }
 
-export function LandingPage() {
+export function LandingPage({
+  upcomingShows = [],
+  testimonials = [],
+}: {
+  upcomingShows?: LandingShow[];
+  testimonials?: LandingTestimonial[];
+} = {}) {
   return (
     <main className="landing-shell bg-noir relative min-h-screen selection:bg-gold selection:text-black">
       <SmoothScroll>
@@ -155,7 +183,9 @@ export function LandingPage() {
           <div className="relative z-20 bg-noir">
             <CinemaSection />
           </div>
-          <ShowList />
+          <ShowList shows={upcomingShows} />
+
+          {testimonials.length > 0 ? <Testimonials testimonials={testimonials} /> : null}
 
           <footer className="relative pt-24 pb-20 md:pt-32 md:pb-24 bg-noir overflow-x-clip">
             <div className="section-fade-top" />

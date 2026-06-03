@@ -89,6 +89,8 @@ model Tenant {
   setlists               Setlist[]
   providers              Provider[]
   reviews                Review[]
+  rehearsals             Rehearsal[]
+  bandEvents             BandEvent[]
   createdAt              DateTime                @default(now())
   updatedAt              DateTime                @updatedAt
 }
@@ -160,6 +162,7 @@ model Musician {
   titular         Musician?        @relation("Substitutes", fields: [titularId], references: [id], onDelete: SetNull)
   substitutes     Musician[]       @relation("Substitutes")
   eventMusicians  EventMusician[]
+  rehearsalAttendance RehearsalAttendance[]
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 
@@ -422,6 +425,73 @@ model Review {
 
   @@index([tenantId])
   @@index([tenantId, published])
+}
+
+model Rehearsal {
+  id          String                @id @default(uuid())
+  tenantId    String
+  tenant      Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  title       String
+  date        DateTime
+  startTime   String?
+  endTime     String?
+  locationName String?
+  address     String?
+  mapsLink    String?
+  goal        String?
+  notes       String?
+  status      String                @default("scheduled")
+  attendance  RehearsalAttendance[]
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, date])
+  @@index([tenantId, status])
+}
+
+model RehearsalAttendance {
+  id           String    @id @default(uuid())
+  tenantId     String
+  rehearsalId  String
+  rehearsal    Rehearsal @relation(fields: [rehearsalId], references: [id], onDelete: Cascade)
+  musicianId   String
+  musician     Musician  @relation(fields: [musicianId], references: [id], onDelete: Cascade)
+  status       String    @default("invited")
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([rehearsalId, musicianId])
+  @@index([tenantId])
+  @@index([musicianId])
+}
+
+model BandEvent {
+  id           String   @id @default(uuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  title        String
+  kind         String   @default("show")
+  date         DateTime
+  endDate      DateTime?
+  startTime    String?
+  endTime      String?
+  venueName    String?
+  city         String?
+  country      String?
+  ticketUrl    String?
+  publicNotes  String?
+  internalNotes String?
+  published    Boolean  @default(false)
+  status       String   @default("scheduled")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, date])
+  @@index([tenantId, published])
+  @@index([tenantId, status])
 }
 
 model Contract {
