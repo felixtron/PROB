@@ -16,6 +16,7 @@ export default async function LoginPage() {
 
   const brandTitle = tenant?.name ?? "PROB"
   const brandColor = tenant?.primaryColor ?? null
+  const logoUrl = tenant?.logoUrl ?? null
 
   return (
     <div
@@ -30,19 +31,28 @@ export default async function LoginPage() {
       }}
     >
       <main style={{ width: "100%", maxWidth: 460, display: "grid", gap: 32 }}>
-        <div style={{ textAlign: "center", display: "grid", gap: 8 }}>
-          <h1
-            style={{
-              fontSize: 44,
-              fontWeight: 800,
-              letterSpacing: "0.05em",
-              margin: 0,
-              textTransform: "uppercase",
-              color: brandColor ?? "var(--primary)",
-            }}
-          >
-            {brandTitle}
-          </h1>
+        <div style={{ textAlign: "center", display: "grid", gap: 14, justifyItems: "center" }}>
+          {logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element -- per-tenant URL, no optimization needed
+            <img
+              src={logoUrl}
+              alt={brandTitle}
+              style={{ maxHeight: 140, width: "auto", margin: "0 auto" }}
+            />
+          ) : (
+            <h1
+              style={{
+                fontSize: 44,
+                fontWeight: 800,
+                letterSpacing: "0.05em",
+                margin: 0,
+                textTransform: "uppercase",
+                color: brandColor ?? "var(--primary)",
+              }}
+            >
+              {brandTitle}
+            </h1>
+          )}
           <p style={{ margin: 0, color: "var(--muted-foreground)", fontSize: 15 }}>
             Inicia sesión en tu cuenta
           </p>
