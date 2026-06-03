@@ -70,7 +70,7 @@ const GROUPS: AdminNavGroup[] = [
   },
   {
     label: "Marketing",
-    items: [{ href: "/admin/media", label: "Banners y Galería", comingSoon: true }],
+    items: [{ href: "/admin/media", label: "Banners y Galería" }],
   },
   {
     label: "Otros",

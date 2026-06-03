@@ -135,7 +135,7 @@ export default async function HomePage() {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
-  const [upcomingShows, testimonials] = await Promise.all([
+  const [upcomingShows, testimonials, media] = await Promise.all([
     db.bandEvent.findMany({
       where: { tenantId: tenant.id, published: true, date: { gte: today }, status: { not: "cancelled" } },
       orderBy: { date: "asc" },
@@ -145,6 +145,10 @@ export default async function HomePage() {
       where: { tenantId: tenant.id, published: true },
       orderBy: { createdAt: "desc" },
       take: 6,
+    }),
+    db.siteMedia.findMany({
+      where: { tenantId: tenant.id, published: true, kind: { in: ["gallery", "press"] } },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     }),
   ])
 
@@ -169,6 +173,26 @@ export default async function HomePage() {
     avatarUrl: r.avatarUrl,
   }))
 
+  const galleryForClient = media
+    .filter((m) => m.kind === "gallery")
+    .map((m) => ({
+      id: m.id,
+      url: m.url,
+      thumbnailUrl: m.thumbnailUrl,
+      alt: m.alt,
+      caption: m.caption,
+      linkUrl: m.linkUrl,
+    }))
+
+  const pressForClient = media
+    .filter((m) => m.kind === "press")
+    .map((m) => ({
+      id: m.id,
+      url: m.url,
+      alt: m.alt,
+      linkUrl: m.linkUrl,
+    }))
+
   return (
     <>
       <Script
@@ -176,7 +200,12 @@ export default async function HomePage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <LandingPage upcomingShows={upcomingShowsForClient} testimonials={testimonialsForClient} />
+      <LandingPage
+        upcomingShows={upcomingShowsForClient}
+        testimonials={testimonialsForClient}
+        gallery={galleryForClient}
+        press={pressForClient}
+      />
     </>
   )
 }

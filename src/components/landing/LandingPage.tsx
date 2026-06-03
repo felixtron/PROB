@@ -13,6 +13,8 @@ import ShowList from "@/components/landing/sections/ShowList";
 import CinemaSection from "@/components/landing/sections/CinemaSection";
 import PressKitCTA from "@/components/landing/sections/PressKitCTA";
 import Testimonials from "@/components/landing/sections/Testimonials";
+import Gallery from "@/components/landing/sections/Gallery";
+import PressStrip from "@/components/landing/sections/PressStrip";
 
 export type LandingShow = {
   id: string;
@@ -33,6 +35,22 @@ export type LandingTestimonial = {
   rating: number;
   quote: string;
   avatarUrl: string | null;
+};
+
+export type LandingGalleryItem = {
+  id: string;
+  url: string;
+  thumbnailUrl: string | null;
+  alt: string;
+  caption: string | null;
+  linkUrl: string | null;
+};
+
+export type LandingPressItem = {
+  id: string;
+  url: string;
+  alt: string;
+  linkUrl: string | null;
 };
 
 // UI Components
@@ -89,9 +107,13 @@ function DeferredSpotify({ src, height = "100%", title }: { src: string; height?
 export function LandingPage({
   upcomingShows = [],
   testimonials = [],
+  gallery = [],
+  press = [],
 }: {
   upcomingShows?: LandingShow[];
   testimonials?: LandingTestimonial[];
+  gallery?: LandingGalleryItem[];
+  press?: LandingPressItem[];
 } = {}) {
   return (
     <main className="landing-shell bg-noir relative min-h-screen selection:bg-gold selection:text-black">
@@ -184,6 +206,10 @@ export function LandingPage({
             <CinemaSection />
           </div>
           <ShowList shows={upcomingShows} />
+
+          {gallery.length > 0 ? <Gallery items={gallery} /> : null}
+
+          {press.length > 0 ? <PressStrip items={press} /> : null}
 
           {testimonials.length > 0 ? <Testimonials testimonials={testimonials} /> : null}
 
