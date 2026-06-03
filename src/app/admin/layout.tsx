@@ -19,7 +19,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const user = await requireTenantAdmin(tenant.id)
 
   return (
-    <div className="admin-theme" style={{ minHeight: "100vh", background: "var(--background)" }}>
+    <div style={{ minHeight: "100vh", background: "var(--background)" }}>
       <header
         className="page-shell"
         style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 0", gap: 16 }}
