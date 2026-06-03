@@ -2,35 +2,38 @@
 
 import { useActionState } from "react"
 import { useFormStatus } from "react-dom"
+import { Trash2 } from "lucide-react"
 import {
   createRehearsalAction,
   updateRehearsalAction,
   deleteRehearsalAction,
   type RehearsalActionState,
 } from "@/app/admin/ensayos/actions"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Button } from "@/components/ui/button"
 
 const initial: RehearsalActionState = { ok: false }
+const SELECT_CLASS =
+  "h-11 w-full rounded-xl border border-border/40 bg-card px-4 py-2 text-sm focus:border-primary/50 focus:ring-4 focus:ring-primary/10 outline-none disabled:opacity-50 transition-all"
 
 function Submit({ label, pendingLabel }: { label: string; pendingLabel: string }) {
   const { pending } = useFormStatus()
   return (
-    <button className="button" disabled={pending} type="submit">
+    <Button type="submit" disabled={pending} className="h-10 px-5 font-bold">
       {pending ? pendingLabel : label}
-    </button>
+    </Button>
   )
 }
 
 function DangerSubmit() {
   const { pending } = useFormStatus()
   return (
-    <button
-      className="button secondary"
-      disabled={pending}
-      type="submit"
-      style={{ color: "#fb7185", borderColor: "rgba(251,113,133,0.4)" }}
-    >
+    <Button type="submit" variant="destructive" disabled={pending} className="gap-1.5 h-10 px-4">
+      <Trash2 className="w-3.5 h-3.5" />
       {pending ? "..." : "Eliminar"}
-    </button>
+    </Button>
   )
 }
 
@@ -59,40 +62,53 @@ export function RehearsalForm({
   const [state, formAction] = useActionState(action, initial)
 
   return (
-    <form action={formAction} className="card" style={{ padding: 18, display: "grid", gap: 12 }}>
+    <form action={formAction} className="bg-white rounded-2xl border border-border/40 p-6 shadow-sm space-y-5">
       {mode === "edit" ? <input type="hidden" name="id" value={initialValues.id} /> : null}
       {state.message ? (
-        <p style={{ color: state.ok ? "#86efac" : "#fb7185", margin: 0, fontSize: 13 }}>{state.message}</p>
+        <div
+          className={`rounded-lg px-3 py-2 text-sm font-medium ${
+            state.ok
+              ? "bg-green-500/10 text-green-700 border border-green-500/30"
+              : "bg-red-500/10 text-red-700 border border-red-500/30"
+          }`}
+        >
+          {state.message}
+        </div>
       ) : null}
 
-      <div className="field">
-        <label>Título del ensayo</label>
-        <input name="title" defaultValue={initialValues.title} placeholder="Ensayo general · pre-boda Lobato" />
+      <div className="space-y-1.5">
+        <Label htmlFor="title">Título del ensayo</Label>
+        <Input id="title" name="title" defaultValue={initialValues.title} placeholder="Ensayo general · pre-boda Lobato" />
       </div>
 
-      <div className="grid-3">
-        <div className="field">
-          <label>Fecha</label>
-          <input name="date" type="date" defaultValue={initialValues.date} required />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="date">Fecha</Label>
+          <Input id="date" name="date" type="date" defaultValue={initialValues.date} required />
         </div>
-        <div className="field">
-          <label>Hora inicio</label>
-          <input name="startTime" type="time" defaultValue={initialValues.startTime} />
+        <div className="space-y-1.5">
+          <Label htmlFor="startTime">Hora inicio</Label>
+          <Input id="startTime" name="startTime" type="time" defaultValue={initialValues.startTime} />
         </div>
-        <div className="field">
-          <label>Hora fin</label>
-          <input name="endTime" type="time" defaultValue={initialValues.endTime} />
+        <div className="space-y-1.5">
+          <Label htmlFor="endTime">Hora fin</Label>
+          <Input id="endTime" name="endTime" type="time" defaultValue={initialValues.endTime} />
         </div>
       </div>
 
-      <div className="grid-2">
-        <div className="field">
-          <label>Locación</label>
-          <input name="locationName" defaultValue={initialValues.locationName} placeholder="Estudio Polanco, Sala Norte..." />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="locationName">Locación</Label>
+          <Input
+            id="locationName"
+            name="locationName"
+            defaultValue={initialValues.locationName}
+            placeholder="Estudio Polanco, Sala Norte..."
+          />
         </div>
-        <div className="field">
-          <label>Estado</label>
-          <select name="status" defaultValue={initialValues.status}>
+        <div className="space-y-1.5">
+          <Label htmlFor="status">Estado</Label>
+          <select id="status" name="status" defaultValue={initialValues.status} className={SELECT_CLASS}>
             <option value="scheduled">Programado</option>
             <option value="done">Realizado</option>
             <option value="cancelled">Cancelado</option>
@@ -100,34 +116,46 @@ export function RehearsalForm({
         </div>
       </div>
 
-      <div className="grid-2">
-        <div className="field">
-          <label>Dirección</label>
-          <input name="address" defaultValue={initialValues.address} />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="address">Dirección</Label>
+          <Input id="address" name="address" defaultValue={initialValues.address} />
         </div>
-        <div className="field">
-          <label>Maps link</label>
-          <input name="mapsLink" type="url" defaultValue={initialValues.mapsLink} placeholder="https://maps..." />
+        <div className="space-y-1.5">
+          <Label htmlFor="mapsLink">Maps link</Label>
+          <Input id="mapsLink" name="mapsLink" type="url" defaultValue={initialValues.mapsLink} placeholder="https://maps..." />
         </div>
       </div>
 
-      <div className="field">
-        <label>Objetivo del ensayo</label>
-        <textarea name="goal" defaultValue={initialValues.goal} placeholder="Pulir tracks #3 y #7, repasar transiciones..." />
+      <div className="space-y-1.5">
+        <Label htmlFor="goal">Objetivo del ensayo</Label>
+        <Textarea
+          id="goal"
+          name="goal"
+          defaultValue={initialValues.goal}
+          placeholder="Pulir tracks #3 y #7, repasar transiciones..."
+          rows={2}
+        />
       </div>
 
-      <div className="field">
-        <label>Notas internas</label>
-        <textarea name="notes" defaultValue={initialValues.notes} placeholder="Llevar equipo extra, snacks, etc." />
+      <div className="space-y-1.5">
+        <Label htmlFor="notes">Notas internas</Label>
+        <Textarea
+          id="notes"
+          name="notes"
+          defaultValue={initialValues.notes}
+          placeholder="Llevar equipo extra, snacks, etc."
+          rows={2}
+        />
       </div>
 
-      <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+      <div className="flex gap-2 items-center pt-2">
         <Submit
           label={mode === "create" ? "Crear ensayo" : "Guardar cambios"}
           pendingLabel={mode === "create" ? "Creando..." : "Guardando..."}
         />
         {mode === "edit" ? (
-          <form action={deleteRehearsalAction} style={{ display: "inline" }}>
+          <form action={deleteRehearsalAction} className="inline">
             <input type="hidden" name="id" value={initialValues.id} />
             <DangerSubmit />
           </form>
