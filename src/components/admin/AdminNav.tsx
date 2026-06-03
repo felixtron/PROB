@@ -44,7 +44,7 @@ const GROUPS: AdminNavGroup[] = [
     label: "Producción",
     items: [
       { href: "/admin/musicians", label: "Banda y Suplentes" },
-      { href: "/admin/repertorio", label: "Repertorio", comingSoon: true },
+      { href: "/admin/repertorio", label: "Repertorio" },
     ],
   },
   {

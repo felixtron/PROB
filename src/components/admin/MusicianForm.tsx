@@ -1,6 +1,6 @@
 "use client"
 
-import { useActionState } from "react"
+import { useActionState, useState } from "react"
 import { useFormStatus } from "react-dom"
 import {
   createMusicianAction,
@@ -44,17 +44,27 @@ export type MusicianInitialValues = {
   whatsapp: string
   photoUrl: string
   active: boolean
+  isTitular: boolean
+  titularId: string
 }
+
+export type TitularOption = { id: string; name: string }
 
 export function MusicianForm({
   initialValues,
   mode,
+  titulares,
 }: {
   initialValues: MusicianInitialValues
   mode: "create" | "edit"
+  titulares: TitularOption[]
 }) {
   const action = mode === "create" ? createMusicianAction : updateMusicianAction
   const [state, formAction] = useActionState(action, initial)
+  const [isTitular, setIsTitular] = useState(initialValues.isTitular)
+
+  // When editing, a suplente can't be set as substitute of itself.
+  const availableTitulares = titulares.filter((t) => t.id !== initialValues.id)
 
   return (
     <form action={formAction} className="card" style={{ padding: 20, display: "grid", gap: 14 }}>
@@ -62,6 +72,33 @@ export function MusicianForm({
       {state.message ? (
         <p style={{ color: state.ok ? "#86efac" : "#fb7185", margin: 0, fontSize: 13 }}>{state.message}</p>
       ) : null}
+
+      <div className="grid-2">
+        <div className="field">
+          <label>Tipo</label>
+          <select
+            name="isTitular"
+            value={isTitular ? "on" : ""}
+            onChange={(e) => setIsTitular(e.target.value === "on")}
+          >
+            <option value="on">Titular</option>
+            <option value="">Suplente</option>
+          </select>
+        </div>
+        {!isTitular ? (
+          <div className="field">
+            <label>Suplente de</label>
+            <select name="titularId" defaultValue={initialValues.titularId}>
+              <option value="">— Sin asignar —</option>
+              {availableTitulares.map((t) => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+          </div>
+        ) : (
+          <input type="hidden" name="titularId" value="" />
+        )}
+      </div>
 
       <div className="grid-2">
         <div className="field">

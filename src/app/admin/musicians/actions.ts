@@ -22,6 +22,10 @@ const baseSchema = z.object({
   active: z
     .union([z.literal("on"), z.literal("true"), z.literal(""), z.undefined()])
     .transform((v) => v === "on" || v === "true"),
+  isTitular: z
+    .union([z.literal("on"), z.literal("true"), z.literal(""), z.undefined()])
+    .transform((v) => v === "on" || v === "true"),
+  titularId: optionalStr,
 })
 
 const createSchema = baseSchema
@@ -44,6 +48,16 @@ export async function createMusicianAction(
   const parsed = createSchema.safeParse(Object.fromEntries(formData.entries()))
   if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Datos inválidos." }
 
+  // If it's a titular, no titularId. If suplente, validate the titularId belongs to this tenant.
+  let titularId: string | null = null
+  if (!parsed.data.isTitular && parsed.data.titularId) {
+    const titular = await db.musician.findFirst({
+      where: { id: parsed.data.titularId, tenantId, isTitular: true },
+      select: { id: true },
+    })
+    titularId = titular?.id ?? null
+  }
+
   await db.musician.create({
     data: {
       tenantId,
@@ -55,12 +69,14 @@ export async function createMusicianAction(
       whatsapp: parsed.data.whatsapp || null,
       photoUrl: parsed.data.photoUrl || null,
       active: parsed.data.active,
+      isTitular: parsed.data.isTitular,
+      titularId,
     },
   })
 
   revalidatePath("/admin/musicians")
   revalidatePath("/admin")
-  return { ok: true, message: "Músico agregado." }
+  return { ok: true, message: parsed.data.isTitular ? "Titular agregado." : "Suplente agregado." }
 }
 
 export async function updateMusicianAction(
@@ -70,6 +86,20 @@ export async function updateMusicianAction(
   const tenantId = await resolveTenantIdForAdminAction()
   const parsed = updateSchema.safeParse(Object.fromEntries(formData.entries()))
   if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Datos inválidos." }
+
+  let titularId: string | null = null
+  if (!parsed.data.isTitular && parsed.data.titularId) {
+    const titular = await db.musician.findFirst({
+      where: {
+        id: parsed.data.titularId,
+        tenantId,
+        isTitular: true,
+        NOT: { id: parsed.data.id }, // can't be a substitute of yourself
+      },
+      select: { id: true },
+    })
+    titularId = titular?.id ?? null
+  }
 
   const result = await db.musician.updateMany({
     where: { id: parsed.data.id, tenantId },
@@ -82,6 +112,8 @@ export async function updateMusicianAction(
       whatsapp: parsed.data.whatsapp || null,
       photoUrl: parsed.data.photoUrl || null,
       active: parsed.data.active,
+      isTitular: parsed.data.isTitular,
+      titularId,
     },
   })
   if (result.count === 0) return { ok: false, message: "Músico no encontrado." }

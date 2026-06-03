@@ -85,6 +85,7 @@ model Tenant {
   notifications          Notification[]
   inboxItems             InboxItem[]
   contracts              Contract[]
+  songs                  Song[]
   createdAt              DateTime                @default(now())
   updatedAt              DateTime                @updatedAt
 }
@@ -151,11 +152,16 @@ model Musician {
   whatsapp        String?
   photoUrl        String?
   active          Boolean          @default(true)
+  isTitular       Boolean          @default(true)
+  titularId       String?
+  titular         Musician?        @relation("Substitutes", fields: [titularId], references: [id], onDelete: SetNull)
+  substitutes     Musician[]       @relation("Substitutes")
   eventMusicians  EventMusician[]
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 
   @@index([tenantId])
+  @@index([titularId])
 }
 
 model ClientProfile {
@@ -319,6 +325,26 @@ model Notification {
   @@index([tenantId])
   @@index([tenantId, status])
   @@index([bookingRequestId])
+}
+
+model Song {
+  id           String   @id @default(uuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  title        String
+  artist       String?
+  genre        String?
+  language     String?
+  era          String?
+  durationMin  Int?
+  songKey      String?
+  notes        String?
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, active])
 }
 
 model Contract {
