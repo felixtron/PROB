@@ -1,6 +1,8 @@
+import { Truck, CheckCircle2, Folder } from "lucide-react"
 import { db } from "@/lib/db"
 import { resolveCurrentTenant } from "@/lib/admin-helpers"
 import { ProviderForm } from "@/components/admin/ProviderForm"
+import { Card } from "@/components/ui/card"
 
 export const dynamic = "force-dynamic"
 
@@ -10,6 +12,9 @@ export default async function ProveedoresPage() {
     where: { tenantId: tenant.id },
     orderBy: [{ active: "desc" }, { category: "asc" }, { name: "asc" }],
   })
+
+  const activeCount = providers.filter((p) => p.active).length
+  const categoriesSet = new Set(providers.map((p) => p.category || "Sin categoría"))
 
   const grouped = new Map<string, typeof providers>()
   for (const p of providers) {
@@ -22,49 +27,72 @@ export default async function ProveedoresPage() {
     }
   }
 
+  const kpis = [
+    { label: "Total", value: providers.length, icon: Truck, accent: "text-primary" },
+    { label: "Activos", value: activeCount, icon: CheckCircle2, accent: "text-green-600" },
+    { label: "Categorías", value: categoriesSet.size, icon: Folder, accent: "text-blue-600" },
+  ]
+
   return (
-    <div style={{ display: "grid", gap: 24 }}>
-      <div>
-        <p className="muted" style={{ textTransform: "uppercase", fontWeight: 800, letterSpacing: 1, margin: 0 }}>
-          Logística
-        </p>
-        <h1 style={{ fontSize: 32, margin: "8px 0 4px" }}>Proveedores</h1>
-        <p className="muted" style={{ margin: 0 }}>
+    <div className="p-8 bg-background min-h-full">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-foreground tracking-tight">Proveedores</h1>
+        <p className="text-muted-foreground mt-1 text-sm">
           Audio, iluminación, foto/video, transporte y todo lo que se subcontrata para un evento.
         </p>
       </div>
 
-      <ProviderForm
-        mode="create"
-        tenantCurrency={tenant.currency}
-        initialValues={{
-          name: "",
-          category: "",
-          contactName: "",
-          email: "",
-          phone: "",
-          whatsapp: "",
-          city: "",
-          baseRate: "",
-          currency: "",
-          notes: "",
-          active: true,
-        }}
-      />
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+        {kpis.map((kpi) => {
+          const Icon = kpi.icon
+          return (
+            <Card key={kpi.label} className="bg-card border-border/40 p-4 rounded-xl shadow-sm">
+              <div className="flex items-center gap-2 text-muted-foreground mb-2">
+                <Icon className={`w-4 h-4 ${kpi.accent}`} />
+                <span className="text-xs font-bold uppercase tracking-wider">{kpi.label}</span>
+              </div>
+              <div className="text-2xl font-black text-foreground">{kpi.value}</div>
+            </Card>
+          )
+        })}
+      </div>
+
+      <div className="mb-6">
+        <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground mb-3">
+          Nuevo proveedor
+        </h2>
+        <ProviderForm
+          mode="create"
+          tenantCurrency={tenant.currency}
+          initialValues={{
+            name: "",
+            category: "",
+            contactName: "",
+            email: "",
+            phone: "",
+            whatsapp: "",
+            city: "",
+            baseRate: "",
+            currency: "",
+            notes: "",
+            active: true,
+          }}
+        />
+      </div>
 
       {providers.length === 0 ? (
-        <div className="card" style={{ padding: 24 }}>
-          <p className="muted" style={{ margin: 0 }}>
+        <Card className="p-6 bg-white">
+          <p className="text-muted-foreground text-sm m-0">
             Aún no hay proveedores. Agrega el primero arriba.
           </p>
-        </div>
+        </Card>
       ) : (
-        <div style={{ display: "grid", gap: 24 }}>
+        <div className="space-y-6">
           {Array.from(grouped.entries()).map(([category, items]) => (
-            <div key={category} style={{ display: "grid", gap: 12 }}>
-              <p className="muted" style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", margin: 0 }}>
+            <div key={category} className="space-y-3">
+              <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">
                 {category} · {items.length}
-              </p>
+              </h2>
               {items.map((p) => (
                 <ProviderForm
                   key={p.id}
