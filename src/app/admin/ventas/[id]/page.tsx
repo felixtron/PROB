@@ -4,6 +4,7 @@ import { ArrowLeft, FileText, Trash2 } from "lucide-react"
 import { db } from "@/lib/db"
 import { resolveCurrentTenant } from "@/lib/admin-helpers"
 import { BookingDetailForm } from "@/components/admin/BookingDetailForm"
+import { PaymentLinkSection } from "@/components/admin/PaymentLinkSection"
 import { deleteBookingAction } from "@/app/admin/ventas/actions"
 import { issueContractAction } from "@/app/admin/ventas/[id]/contrato/actions"
 import { Card } from "@/components/ui/card"
@@ -65,7 +66,7 @@ export default async function BookingDetailPage({ params }: DetailPageProps) {
   })
   if (!booking) notFound()
 
-  const [clients, packages] = await Promise.all([
+  const [clients, packages, integrations] = await Promise.all([
     db.clientProfile.findMany({
       where: { tenantId: tenant.id },
       orderBy: { name: "asc" },
@@ -76,7 +77,22 @@ export default async function BookingDetailPage({ params }: DetailPageProps) {
       orderBy: { name: "asc" },
       select: { id: true, name: true },
     }),
+    db.integrationSettings.findUnique({
+      where: { tenantId: tenant.id },
+      select: { stripeSecretKey: true },
+    }),
   ])
+
+  const stripeAvailable = Boolean(integrations?.stripeSecretKey)
+  const depositAmount = booking.depositAmount > 0 ? booking.depositAmount : booking.baseAmount
+  const showPaymentLinkSection =
+    stripeAvailable && depositAmount > 0 && booking.paymentStatus !== "completed"
+  const moneyFmt = new Intl.NumberFormat("es-MX", {
+    style: "currency",
+    currency: tenant.currency.toUpperCase(),
+    maximumFractionDigits: 0,
+  })
+  const depositLabel = moneyFmt.format(depositAmount / 100)
 
   return (
     <div className="p-8 bg-background min-h-full">
@@ -150,6 +166,28 @@ export default async function BookingDetailPage({ params }: DetailPageProps) {
           </form>
         )}
       </Card>
+
+      {showPaymentLinkSection ? (
+        <PaymentLinkSection
+          bookingId={booking.id}
+          clientName={booking.clientName}
+          clientWhatsapp={booking.clientWhatsapp}
+          shortCode={booking.shortCode}
+          depositLabel={depositLabel}
+        />
+      ) : booking.paymentStatus === "completed" ? (
+        <Card className="bg-green-500/5 border-green-500/30 p-5 mb-6 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-green-500/15 flex items-center justify-center text-green-700">
+            ✓
+          </div>
+          <div>
+            <div className="text-sm font-bold text-green-700">Anticipo recibido</div>
+            <div className="text-xs text-green-700/80 mt-0.5">
+              El cliente ya pagó. La reserva quedó auto-confirmada por el webhook.
+            </div>
+          </div>
+        </Card>
+      ) : null}
 
       <BookingDetailForm
         booking={{

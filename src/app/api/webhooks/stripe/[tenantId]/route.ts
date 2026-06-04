@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import type Stripe from "stripe"
 import { db } from "@/lib/db"
 import { verifyStripeWebhook } from "@/lib/stripe"
+import { dispatchNotification } from "@/lib/notifications"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -10,13 +11,18 @@ type RouteContext = { params: Promise<{ tenantId: string }> }
 
 /**
  * After Stripe confirms a deposit checkout, we mark the BookingRequest as
- * paid and auto-confirm it. Idempotent: re-running the same event leaves
+ * paid, auto-confirm it, and dispatch WhatsApp notifications to the client
+ * and to the tenant admin. Idempotent: re-running the same event leaves
  * the record in the same state (Payment is upserted by stripePaymentIntentId).
  *
  * Cross-tenant defense: even though the URL carries tenantId, we verify the
  * metadata.tenantId matches before mutating any booking. A misrouted webhook
  * (e.g. tenant misconfigured the URL on Stripe dashboard) won't pollute the
  * wrong tenant's data.
+ *
+ * Notification idempotency: we only send notifications if the booking was
+ * NOT already paymentStatus=completed before our update. That way reruns
+ * of the same Stripe event don't spam the client with duplicate messages.
  */
 async function applyDepositToBooking(
   tenantId: string,
@@ -35,7 +41,19 @@ async function applyDepositToBooking(
 
   const booking = await db.bookingRequest.findFirst({
     where: { id: bookingRequestId, tenantId },
-    select: { id: true, status: true, depositAmount: true, baseAmount: true },
+    select: {
+      id: true,
+      shortCode: true,
+      status: true,
+      paymentStatus: true,
+      depositAmount: true,
+      baseAmount: true,
+      clientName: true,
+      clientWhatsapp: true,
+      clientPhone: true,
+      packageName: true,
+      requestedDate: true,
+    },
   })
   if (!booking) return
 
@@ -48,6 +66,8 @@ async function applyDepositToBooking(
     )
   }
 
+  const wasAlreadyPaid = booking.paymentStatus === "completed"
+
   await db.bookingRequest.update({
     where: { id: booking.id },
     data: {
@@ -56,6 +76,69 @@ async function applyDepositToBooking(
       status: booking.status === "pending" ? "confirmed" : booking.status,
     },
   })
+
+  if (wasAlreadyPaid) return // Notification already sent on first webhook fire.
+
+  // Dispatch WhatsApp notifications. We tolerate Evolution being unconfigured
+  // or temporarily down — dispatchNotification persists a Notification row
+  // with status=failed so Prisca can retry from /admin/notificaciones.
+  const tenant = await db.tenant.findUnique({
+    where: { id: tenantId },
+    select: { name: true, currency: true, whatsapp: true },
+  })
+  if (!tenant) return
+
+  const moneyFmt = new Intl.NumberFormat("es-MX", {
+    style: "currency",
+    currency: (tenant.currency ?? "MXN").toUpperCase(),
+    maximumFractionDigits: 0,
+  })
+  const amountLabel = moneyFmt.format((paidAmount > 0 ? paidAmount : expectedAmount) / 100)
+  const dateLabel = booking.requestedDate
+    ? booking.requestedDate.toISOString().slice(0, 10)
+    : "por confirmar"
+
+  const clientPhone = (booking.clientWhatsapp || booking.clientPhone || "").replace(/[^0-9]/g, "")
+  if (clientPhone) {
+    await dispatchNotification({
+      tenantId,
+      type: "deposit_received_client",
+      recipient: clientPhone,
+      bookingRequestId: booking.id,
+      message: [
+        `¡Recibimos tu anticipo de ${amountLabel}, ${booking.clientName.split(" ")[0]}!`,
+        ``,
+        `Tu evento del ${dateLabel}${booking.packageName ? ` (${booking.packageName})` : ""} queda confirmado.`,
+        ``,
+        `Reserva ${booking.shortCode}.`,
+        ``,
+        `${tenant.name} — pronto te contactamos con los siguientes pasos.`,
+      ].join("\n"),
+    }).catch((err) => {
+      console.error("[stripe webhook] client notification dispatch failed", err)
+    })
+  }
+
+  const adminPhone = (tenant.whatsapp ?? "").replace(/[^0-9]/g, "")
+  if (adminPhone && adminPhone !== clientPhone) {
+    await dispatchNotification({
+      tenantId,
+      type: "deposit_received_admin",
+      recipient: adminPhone,
+      bookingRequestId: booking.id,
+      message: [
+        `💸 Anticipo recibido: ${amountLabel}`,
+        ``,
+        `Cliente: ${booking.clientName}`,
+        `Reserva: ${booking.shortCode}${booking.packageName ? ` · ${booking.packageName}` : ""}`,
+        `Fecha del evento: ${dateLabel}`,
+        ``,
+        `La cotización quedó marcada como confirmada automáticamente.`,
+      ].join("\n"),
+    }).catch((err) => {
+      console.error("[stripe webhook] admin notification dispatch failed", err)
+    })
+  }
 }
 
 export async function POST(req: Request, { params }: RouteContext) {

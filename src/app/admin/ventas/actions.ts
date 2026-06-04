@@ -2,9 +2,11 @@
 
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
+import { headers } from "next/headers"
 import { z } from "zod"
 import { db } from "@/lib/db"
 import { resolveTenantIdForAdminAction } from "@/lib/admin-helpers"
+import { createDepositCheckoutSession } from "@/lib/checkout"
 
 export type BookingActionState = {
   ok: boolean
@@ -256,4 +258,31 @@ export async function updateBookingAction(
   revalidatePath("/admin/ventas")
   revalidatePath("/admin")
   return { ok: true, message: "Cambios guardados." }
+}
+
+export type PaymentLinkActionState = {
+  ok: boolean
+  message?: string
+  url?: string
+}
+
+export async function generatePaymentLinkAction(
+  _state: PaymentLinkActionState,
+  formData: FormData,
+): Promise<PaymentLinkActionState> {
+  const tenantId = await resolveTenantIdForAdminAction()
+  const bookingId = String(formData.get("bookingId") || "")
+  if (!bookingId) return { ok: false, message: "Booking ID requerido." }
+
+  // Build the public origin so the success/cancel URLs point at the live
+  // tenant host (not localhost or the admin host in managed mode).
+  const reqHeaders = await headers()
+  const host = reqHeaders.get("x-tenant-host") ?? reqHeaders.get("host") ?? ""
+  const isLocal = host.startsWith("localhost") || host.startsWith("127.") || host.startsWith("::1")
+  const protocol = isLocal ? "http" : "https"
+  const appOrigin = host ? `${protocol}://${host}` : ""
+
+  const result = await createDepositCheckoutSession(tenantId, bookingId, appOrigin)
+  if (!result.ok) return { ok: false, message: result.error }
+  return { ok: true, url: result.url, message: "Link generado. Cópialo o mándalo por WhatsApp." }
 }
