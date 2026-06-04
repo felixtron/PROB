@@ -212,7 +212,7 @@ export function AdminSidebar({ user, pendingInbox = 0, logoUrl, tenantName = "PR
                 <button
                   onClick={() => toggleSection(section.id)}
                   className={cn(
-                    "w-full flex items-center justify-between px-3 py-3 text-[10px] font-black tracking-widest uppercase transition-all rounded-xl group mb-1",
+                    "w-full flex items-center justify-between px-3.5 py-3.5 text-xs font-black tracking-widest uppercase transition-all rounded-xl group mb-1",
                     isAnyChildActive
                       ? "bg-[#E91E63] text-white shadow-lg shadow-pink-500/30"
                       : section.placeholder
@@ -221,7 +221,7 @@ export function AdminSidebar({ user, pendingInbox = 0, logoUrl, tenantName = "PR
                   )}
                   disabled={section.placeholder}
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2.5">
                     <SectionIcon
                       className={cn(
                         "w-4 h-4",
@@ -270,7 +270,7 @@ export function AdminSidebar({ user, pendingInbox = 0, logoUrl, tenantName = "PR
                               href={item.href}
                               onClick={() => setExpandedSections((prev) => ({ ...prev, mobile: false }))}
                               className={cn(
-                                "flex items-center gap-3 px-4 py-3 text-xs font-bold rounded-xl transition-all group relative",
+                                "flex items-center gap-3 px-4 py-3 text-sm font-bold rounded-xl transition-all group relative",
                                 isActive
                                   ? "bg-white/10 text-white"
                                   : "text-white/50 hover:text-white hover:bg-white/5",
