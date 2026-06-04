@@ -168,7 +168,6 @@ html {
 }
 
 h1, h2, h3 {
-  font-family: var(--font-heading, var(--font-sans, inherit));
   letter-spacing: -0.02em;
 }
 
