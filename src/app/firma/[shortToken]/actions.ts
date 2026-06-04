@@ -4,6 +4,7 @@ import { redirect } from "next/navigation"
 import { z } from "zod"
 import { db } from "@/lib/db"
 import { resolveCurrentTenant } from "@/lib/admin-helpers"
+import { applyConfirmationAutomation } from "@/lib/booking-confirmation"
 
 export type SignState = { ok: boolean; message?: string }
 
@@ -59,6 +60,16 @@ export async function recordClientSignatureAction(
       status: nextStatus,
     },
   })
+
+  // If client signature completed the signature loop (admin already signed),
+  // auto-create the Event + landing BandEvent. Failures don't break the flow.
+  if (nextStatus === "signed_both") {
+    try {
+      await applyConfirmationAutomation(contract.tenantId, contract.bookingRequestId)
+    } catch (err) {
+      console.error("[contract:signClient] confirmation automation failed", err)
+    }
+  }
 
   redirect(`/firma/${data.shortToken}/exito`)
 }

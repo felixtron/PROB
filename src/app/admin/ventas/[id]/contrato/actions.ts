@@ -13,6 +13,7 @@ import {
   type ContractVars,
 } from "@/lib/contracts"
 import { dispatchNotification } from "@/lib/notifications"
+import { applyConfirmationAutomation } from "@/lib/booking-confirmation"
 
 export type ContractActionState = { ok: boolean; message?: string }
 
@@ -154,6 +155,17 @@ export async function signAdminAction(
       status: nextStatus,
     },
   })
+
+  // Auto-create Event + BandEvent (landing) when both parties have signed.
+  // Idempotent: re-running on a booking already linked to an Event is a no-op.
+  if (nextStatus === "signed_both") {
+    try {
+      await applyConfirmationAutomation(tenantId, data.bookingId)
+    } catch (err) {
+      // Don't let automation failure break the signature flow.
+      console.error("[contract:signAdmin] confirmation automation failed", err)
+    }
+  }
 
   revalidatePath(`/admin/ventas/${data.bookingId}/contrato`)
   revalidatePath(`/admin/ventas/${data.bookingId}`)

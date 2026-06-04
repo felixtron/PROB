@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import {
   Calendar, Banknote, FileText, TrendingUp, Music, Bell,
   Plus, FilePlus, CalendarDays, Inbox, RefreshCcw, Zap,
+  CheckCircle2, XCircle, ExternalLink,
 } from "lucide-react"
 import { isInstalled } from "@/lib/install"
 import { getCurrentTenant, getInstalledTenant } from "@/lib/tenant"
@@ -46,7 +47,7 @@ export default async function AdminPage() {
   if (!tenant) redirect("/install")
 
   const now = new Date()
-  const [metrics, upcoming, pendingLeads, pendingInbox] = await Promise.all([
+  const [metrics, upcoming, pendingLeads, pendingInbox, productionPipeline] = await Promise.all([
     getDashboardMetrics(tenant.id, now),
     getUpcomingEvents(tenant.id, now, 5),
     db.bookingRequest.findMany({
@@ -67,6 +68,21 @@ export default async function AdminPage() {
       },
     }),
     db.inboxItem.count({ where: { tenantId: tenant.id, status: "pending" } }).catch(() => 0),
+    // Production pipeline: confirmed bookings with a future date.
+    // Used by the "Semáforo de Producción" section to show readiness traffic-lights.
+    db.bookingRequest.findMany({
+      where: {
+        tenantId: tenant.id,
+        status: "confirmed",
+        requestedDate: { gte: now },
+      },
+      orderBy: { requestedDate: "asc" },
+      take: 12,
+      include: {
+        contract: { select: { status: true } },
+        event: { include: { musicians: { select: { status: true } } } },
+      },
+    }),
   ])
 
   const fmt = makeMoneyFormatter(tenant.currency)
@@ -339,6 +355,128 @@ export default async function AdminPage() {
         </Card>
       </div>
 
+      {/* Semáforo de Producción — readiness traffic-lights for confirmed bookings */}
+      <Card className="bg-white mb-8">
+        <CardHeader>
+          <div className="flex flex-row items-center justify-between gap-4 flex-wrap">
+            <div>
+              <CardTitle className="text-lg uppercase tracking-tight">Semáforo de Producción</CardTitle>
+              <CardDescription>Auditoría de próximos shows confirmados y estatus de logística.</CardDescription>
+            </div>
+            <Link href="/admin/eventos" className="no-underline">
+              <Badge variant="outline" className="text-[10px] uppercase tracking-tight font-bold text-primary border-primary/30 bg-primary/5 hover:bg-primary/10 cursor-pointer">
+                Ver agenda completa
+              </Badge>
+            </Link>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {productionPipeline.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground text-sm border border-dashed border-border/40 rounded-xl">
+              Sin eventos próximos confirmados. Cuando una cotización se firma por ambas partes, aparece aquí
+              automáticamente.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {productionPipeline.map((b) => {
+                const eventDate = b.requestedDate!
+                const daysUntil = Math.ceil((eventDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+                const isSigned = b.contract?.status === "signed_both"
+                const isPaid = b.paymentStatus === "completed"
+                const hasDeposit = b.depositAmount > 0 || isPaid
+                const eventMusicians = b.event?.musicians ?? []
+                const musiciansConfirmed =
+                  eventMusicians.length > 0 && eventMusicians.every((m) => m.status === "confirmed")
+                const balance = Math.max(0, b.baseAmount - b.depositAmount)
+                const isPaidInFull = isPaid || balance === 0
+
+                const isUrgent = daysUntil <= 7
+                const isReady = isSigned && hasDeposit && musiciansConfirmed
+
+                const cardBorder = isReady
+                  ? "border-green-500/40 bg-green-50/40"
+                  : isUrgent
+                  ? "border-red-500/40 bg-red-50/40"
+                  : "border-border/40 bg-white"
+
+                const dateBlockColor = isReady
+                  ? "bg-green-600 text-white"
+                  : isUrgent
+                  ? "bg-red-600 text-white"
+                  : "bg-primary text-white"
+
+                return (
+                  <Link
+                    key={b.id}
+                    href={`/admin/ventas/${b.id}`}
+                    className={`flex flex-col gap-3 p-4 rounded-2xl border ${cardBorder} transition-all hover:shadow-md no-underline text-inherit`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-14 h-14 rounded-xl flex flex-col items-center justify-center shrink-0 ${dateBlockColor} shadow-md`}>
+                        <span className="text-[9px] font-black uppercase leading-none opacity-80">
+                          {eventDate.toLocaleString("es-MX", { month: "short" })}
+                        </span>
+                        <span className="text-lg font-black leading-none mt-1">{eventDate.getDate()}</span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-black text-foreground text-sm uppercase tracking-tight flex items-center gap-1.5 flex-wrap">
+                          <span className="truncate max-w-[140px]">{b.clientName}</span>
+                          <code className="text-[9px] font-black bg-primary text-white px-1.5 py-0.5 rounded">
+                            {b.shortCode}
+                          </code>
+                          <ExternalLink className="w-3 h-3 opacity-40 shrink-0" />
+                        </div>
+                        <Badge
+                          variant="outline"
+                          className={`text-[9px] font-black uppercase tracking-tighter mt-1 ${
+                            isUrgent && !isReady
+                              ? "bg-red-500/10 border-red-500/20 text-red-600"
+                              : isReady
+                              ? "bg-green-500/10 border-green-500/20 text-green-600"
+                              : "bg-muted/50 text-muted-foreground"
+                          }`}
+                        >
+                          {daysUntil <= 0 ? "HOY" : daysUntil === 1 ? "MAÑANA" : `EN ${daysUntil} DÍAS`}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-1.5">
+                      <Indicator label="Anticipo" ok={hasDeposit} />
+                      <Indicator label="Contrato" ok={isSigned} />
+                      <Indicator label="Músicos" ok={musiciansConfirmed} />
+                    </div>
+
+                    <div className="mt-auto">
+                      {isPaidInFull ? (
+                        <div className="text-[10px] font-black bg-green-500/10 border border-green-500/20 text-green-600 px-3 py-1.5 rounded-lg text-center uppercase tracking-widest">
+                          Liquidado
+                        </div>
+                      ) : balance > 0 ? (
+                        <div
+                          className={`text-[10px] font-bold px-3 py-1.5 rounded-lg border text-center ${
+                            isUrgent
+                              ? "bg-red-500/10 border-red-500/20 text-red-600"
+                              : "bg-muted/30 border-border/40 text-muted-foreground"
+                          }`}
+                        >
+                          Saldo pendiente: {MXN(balance)}
+                        </div>
+                      ) : null}
+                      {isReady ? (
+                        <div className="mt-2 text-[10px] font-black bg-green-500/15 border border-green-500/30 text-green-700 px-3 py-1.5 rounded-lg text-center flex items-center justify-center gap-1.5">
+                          <CheckCircle2 className="w-3 h-3" /> Listo para el show
+                        </div>
+                      ) : null}
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Quick navigation cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
@@ -365,6 +503,21 @@ export default async function AdminPage() {
           )
         })}
       </div>
+    </div>
+  )
+}
+
+function Indicator({ label, ok }: { label: string; ok: boolean }) {
+  return (
+    <div
+      className={`flex flex-col items-center justify-center gap-1 p-2 rounded-lg border text-[9px] font-black uppercase tracking-widest ${
+        ok
+          ? "bg-green-500/10 border-green-500/20 text-green-600"
+          : "bg-red-500/10 border-red-500/20 text-red-600"
+      }`}
+    >
+      {ok ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+      {label}
     </div>
   )
 }
