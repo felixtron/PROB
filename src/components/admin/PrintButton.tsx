@@ -1,14 +1,13 @@
 "use client"
 
+import { Printer } from "lucide-react"
+import { Button } from "@/components/ui/button"
+
 export function PrintButton({ label = "Imprimir / PDF" }: { label?: string }) {
   return (
-    <button
-      type="button"
-      className="button secondary"
-      onClick={() => window.print()}
-      style={{ padding: "8px 14px", fontSize: 13 }}
-    >
+    <Button type="button" variant="outline" onClick={() => window.print()} className="gap-1.5">
+      <Printer className="w-3.5 h-3.5" />
       {label}
-    </button>
+    </Button>
   )
 }

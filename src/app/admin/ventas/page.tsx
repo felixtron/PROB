@@ -1,7 +1,23 @@
 import Link from "next/link"
+import {
+  ShoppingBag, CheckCircle2, XCircle, Clock, Banknote,
+  Plus, Check, X,
+} from "lucide-react"
 import { db } from "@/lib/db"
 import { resolveCurrentTenant } from "@/lib/admin-helpers"
 import { updateBookingStatusAction, deleteBookingAction } from "@/app/admin/ventas/actions"
+import { Card } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { cn } from "@/lib/utils"
 
 export const dynamic = "force-dynamic"
 
@@ -12,11 +28,18 @@ const STATUS_LABELS: Record<string, string> = {
   expired: "Expirado",
 }
 
-const STATUS_BADGE: Record<string, string> = {
-  pending: "badge warn",
-  confirmed: "badge ok",
-  cancelled: "badge muted",
-  expired: "badge err",
+function statusBadgeClass(status: string): string {
+  switch (status) {
+    case "confirmed":
+      return "text-green-600 border-green-600/40 bg-green-600/5"
+    case "cancelled":
+      return "bg-muted text-muted-foreground"
+    case "expired":
+      return "text-red-600 border-red-600/40 bg-red-600/5"
+    case "pending":
+    default:
+      return "text-yellow-600 border-yellow-600/40 bg-yellow-600/5"
+  }
 }
 
 const FILTER_OPTIONS = [
@@ -47,7 +70,7 @@ export default async function VentasPage({ searchParams }: VentasPageProps) {
     ? { tenantId: tenant.id }
     : { tenantId: tenant.id, status: statusFilter }
 
-  const [bookings, counts] = await Promise.all([
+  const [bookings, counts, valueAgg] = await Promise.all([
     db.bookingRequest.findMany({
       where,
       orderBy: { createdAt: "desc" },
@@ -58,37 +81,84 @@ export default async function VentasPage({ searchParams }: VentasPageProps) {
       by: ["status"],
       where: { tenantId: tenant.id },
       _count: { _all: true },
+      _sum: { baseAmount: true },
+    }),
+    db.bookingRequest.aggregate({
+      where: { tenantId: tenant.id, status: "pending" },
+      _sum: { baseAmount: true },
+      _count: { _all: true },
     }),
   ])
 
   const countByStatus = Object.fromEntries(counts.map((c) => [c.status, c._count._all]))
   const total = counts.reduce((acc, c) => acc + c._count._all, 0)
 
+  const kpis = [
+    { label: "Pipeline activo", value: valueAgg._count._all, icon: Clock, accent: "text-yellow-600" },
+    {
+      label: "Valor pipeline",
+      value: formatMoney(valueAgg._sum.baseAmount ?? 0, tenant.currency),
+      icon: Banknote,
+      accent: "text-primary",
+    },
+    {
+      label: "Confirmados",
+      value: countByStatus["confirmed"] ?? 0,
+      icon: CheckCircle2,
+      accent: "text-green-600",
+    },
+    {
+      label: "Total cotizaciones",
+      value: total,
+      icon: ShoppingBag,
+      accent: "text-blue-600",
+    },
+  ]
+
   return (
-    <div style={{ display: "grid", gap: 24 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 16, flexWrap: "wrap" }}>
+    <div className="p-8 bg-background min-h-full">
+      <div className="flex justify-between items-end mb-8 flex-wrap gap-4">
         <div>
-          <p className="muted" style={{ textTransform: "uppercase", fontWeight: 800, letterSpacing: 1, margin: 0 }}>
-            Admin
-          </p>
-          <h1 style={{ fontSize: 32, margin: "8px 0 4px" }}>Centro de Ventas</h1>
-          <p className="muted" style={{ margin: 0 }}>
-            Pipeline de cotizaciones y bookings. Crea manuales aquí; los del funnel público llegarán automáticamente cuando habilitemos /cotizar (Fase 3d).
+          <h1 className="text-3xl font-bold text-foreground tracking-tight">Centro de Ventas</h1>
+          <p className="text-muted-foreground mt-1 text-sm max-w-2xl">
+            Pipeline de cotizaciones y bookings. Crea manuales aquí; los del funnel público llegan automáticamente.
           </p>
         </div>
-        <Link href="/admin/ventas/manual" className="button">+ Nueva cotización</Link>
+        <Link href="/admin/ventas/manual" className="no-underline">
+          <Button className="gap-1.5 h-10 px-5 font-bold shadow-lg shadow-primary/30">
+            <Plus className="w-4 h-4" />
+            Nueva cotización
+          </Button>
+        </Link>
+      </div>
+
+      {/* KPIs */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        {kpis.map((kpi) => {
+          const Icon = kpi.icon
+          return (
+            <Card key={kpi.label} className="bg-card border-border/40 p-4 rounded-xl shadow-sm">
+              <div className="flex items-center gap-2 text-muted-foreground mb-2">
+                <Icon className={`w-4 h-4 ${kpi.accent}`} />
+                <span className="text-xs font-bold uppercase tracking-wider">{kpi.label}</span>
+              </div>
+              <div className="text-2xl font-black text-foreground">{kpi.value}</div>
+            </Card>
+          )
+        })}
       </div>
 
       {created ? (
-        <div className="card" style={{ padding: 14, borderColor: "rgba(134,239,172,0.5)" }}>
-          <p style={{ margin: 0, fontSize: 13, color: "#86efac" }}>
-            Creado con código <strong>{created}</strong>.
+        <div className="mb-6 rounded-2xl border border-green-500/40 bg-green-500/5 p-4 flex items-start gap-3">
+          <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
+          <p className="text-sm text-green-700">
+            Creado con código <strong className="font-mono">{created}</strong>.
           </p>
         </div>
       ) : null}
 
       {/* Filter tabs */}
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+      <div className="flex gap-2 flex-wrap mb-6">
         {FILTER_OPTIONS.map((opt) => {
           const count = opt.value === "all" ? total : (countByStatus[opt.value] ?? 0)
           const isActive = (statusFilter ?? "all") === opt.value
@@ -97,134 +167,122 @@ export default async function VentasPage({ searchParams }: VentasPageProps) {
             <Link
               key={opt.value}
               href={href}
-              className="card"
-              style={{
-                padding: "8px 14px",
-                textDecoration: "none",
-                background: isActive ? "var(--primary)" : "var(--card)",
-                color: isActive ? "var(--primary-foreground)" : "var(--foreground)",
-                fontWeight: 700,
-                fontSize: 13,
-                display: "inline-flex",
-                gap: 8,
-                alignItems: "center",
-              }}
+              className={cn(
+                "no-underline inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all border",
+                isActive
+                  ? "bg-primary text-white border-primary shadow-md shadow-primary/30"
+                  : "bg-card text-foreground border-border/40 hover:border-primary/40 hover:bg-primary/5",
+              )}
             >
               {opt.label}
-              <span style={{ opacity: 0.7, fontSize: 12 }}>{count}</span>
+              <span className={cn("text-[11px]", isActive ? "text-white/80" : "text-muted-foreground")}>
+                {count}
+              </span>
             </Link>
           )
         })}
       </div>
 
       {bookings.length === 0 ? (
-        <div className="card" style={{ padding: 24 }}>
-          <p className="muted" style={{ margin: 0 }}>
+        <Card className="p-6 bg-white">
+          <p className="text-muted-foreground text-sm m-0">
             {statusFilter === "all"
               ? "Aún no hay cotizaciones. Crea la primera con + Nueva cotización."
               : `Sin cotizaciones con status "${statusFilter}".`}
           </p>
-        </div>
+        </Card>
       ) : (
-        <div className="card" style={{ padding: 4, overflowX: "auto" }}>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Código</th>
-                <th>Cliente</th>
-                <th>Paquete</th>
-                <th>Fecha</th>
-                <th style={{ textAlign: "right" }}>Total</th>
-                <th>Status</th>
-                <th>Origen</th>
-                <th style={{ textAlign: "right" }}>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
+        <Card className="bg-white overflow-x-auto py-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Código</TableHead>
+                <TableHead>Cliente</TableHead>
+                <TableHead>Paquete</TableHead>
+                <TableHead>Fecha</TableHead>
+                <TableHead className="text-right">Total</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Origen</TableHead>
+                <TableHead className="text-right">Acciones</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {bookings.map((b) => (
-                <tr key={b.id}>
-                  <td>
-                    <Link
-                      href={`/admin/ventas/${b.id}`}
-                      style={{ textDecoration: "none", color: "var(--primary)", fontWeight: 700 }}
-                    >
-                      <code style={{ fontSize: 12 }}>{b.shortCode}</code>
+                <TableRow key={b.id}>
+                  <TableCell>
+                    <Link href={`/admin/ventas/${b.id}`} className="no-underline">
+                      <code className="text-primary font-bold text-xs hover:underline">{b.shortCode}</code>
                     </Link>
-                  </td>
-                  <td>
-                    <strong>{b.clientName}</strong>
-                    {b.client ? (
-                      <>
-                        <br />
-                        <span className="muted" style={{ fontSize: 11 }}>{b.client.email ?? b.client.phone ?? ""}</span>
-                      </>
-                    ) : b.clientEmail || b.clientPhone ? (
-                      <>
-                        <br />
-                        <span className="muted" style={{ fontSize: 11 }}>{b.clientEmail ?? b.clientPhone}</span>
-                      </>
-                    ) : null}
-                  </td>
-                  <td>{b.packageName ?? "Custom"}</td>
-                  <td style={{ whiteSpace: "nowrap" }}>
+                  </TableCell>
+                  <TableCell>
+                    <div className="space-y-0.5">
+                      <div className="font-bold text-sm">{b.clientName}</div>
+                      {b.client?.email || b.client?.phone || b.clientEmail || b.clientPhone ? (
+                        <div className="text-muted-foreground text-[11px]">
+                          {b.client?.email ?? b.client?.phone ?? b.clientEmail ?? b.clientPhone}
+                        </div>
+                      ) : null}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-sm">{b.packageName ?? "Custom"}</TableCell>
+                  <TableCell className="whitespace-nowrap text-sm font-mono">
                     {b.requestedDate ? b.requestedDate.toISOString().slice(0, 10) : "—"}
-                  </td>
-                  <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
+                  </TableCell>
+                  <TableCell className="text-right whitespace-nowrap text-sm font-bold">
                     {formatMoney(b.baseAmount, tenant.currency)}
-                  </td>
-                  <td>
-                    <span className={STATUS_BADGE[b.status] ?? "badge muted"}>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className={statusBadgeClass(b.status)}>
                       {STATUS_LABELS[b.status] ?? b.status}
-                    </span>
-                  </td>
-                  <td>
-                    <span className="muted" style={{ fontSize: 11 }}>{b.source}</span>
-                  </td>
-                  <td style={{ textAlign: "right" }}>
-                    <div style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-muted-foreground text-[11px] uppercase tracking-tight">{b.source}</span>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="inline-flex gap-1.5 items-center">
                       {b.status === "pending" ? (
-                        <form action={updateBookingStatusAction} style={{ display: "inline" }}>
+                        <form action={updateBookingStatusAction} className="inline">
                           <input type="hidden" name="id" value={b.id} />
                           <input type="hidden" name="status" value="confirmed" />
-                          <button
-                            className="button secondary"
+                          <Button
                             type="submit"
-                            style={{ padding: "4px 10px", fontSize: 12 }}
+                            variant="outline"
+                            size="sm"
+                            className="text-xs gap-1 text-green-600 border-green-600/30 hover:bg-green-500/10"
                           >
+                            <Check className="w-3 h-3" />
                             Confirmar
-                          </button>
+                          </Button>
                         </form>
                       ) : null}
                       {b.status !== "cancelled" ? (
-                        <form action={updateBookingStatusAction} style={{ display: "inline" }}>
+                        <form action={updateBookingStatusAction} className="inline">
                           <input type="hidden" name="id" value={b.id} />
                           <input type="hidden" name="status" value="cancelled" />
-                          <button
-                            className="button secondary"
+                          <Button
                             type="submit"
-                            style={{ padding: "4px 10px", fontSize: 12, color: "#fb7185", borderColor: "rgba(251,113,133,0.4)" }}
+                            variant="outline"
+                            size="sm"
+                            className="text-xs text-muted-foreground"
                           >
                             Cancelar
-                          </button>
+                          </Button>
                         </form>
                       ) : null}
-                      <form action={deleteBookingAction} style={{ display: "inline" }}>
+                      <form action={deleteBookingAction} className="inline">
                         <input type="hidden" name="id" value={b.id} />
-                        <button
-                          className="button secondary"
-                          type="submit"
-                          style={{ padding: "4px 8px", fontSize: 12, color: "#fb7185", borderColor: "rgba(251,113,133,0.4)" }}
-                        >
-                          ✕
-                        </button>
+                        <Button type="submit" variant="destructive" size="icon-sm" aria-label="Eliminar">
+                          <X className="w-3 h-3" />
+                        </Button>
                       </form>
                     </div>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+          </Table>
+        </Card>
       )}
     </div>
   )

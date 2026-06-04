@@ -1,10 +1,14 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
+import { ArrowLeft, FileText, Trash2 } from "lucide-react"
 import { db } from "@/lib/db"
 import { resolveCurrentTenant } from "@/lib/admin-helpers"
 import { BookingDetailForm } from "@/components/admin/BookingDetailForm"
 import { deleteBookingAction } from "@/app/admin/ventas/actions"
 import { issueContractAction } from "@/app/admin/ventas/[id]/contrato/actions"
+import { Card } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 
 const CONTRACT_STATUS_LABELS: Record<string, string> = {
   draft: "Borrador",
@@ -14,12 +18,15 @@ const CONTRACT_STATUS_LABELS: Record<string, string> = {
   void: "Anulado",
 }
 
-const CONTRACT_STATUS_BADGE: Record<string, string> = {
-  draft: "badge warn",
-  signed_admin: "badge warn",
-  signed_client: "badge warn",
-  signed_both: "badge ok",
-  void: "badge err",
+function contractBadgeClass(status: string): string {
+  switch (status) {
+    case "signed_both":
+      return "text-green-600 border-green-600/40 bg-green-600/5"
+    case "void":
+      return "text-red-600 border-red-600/40 bg-red-600/5"
+    default:
+      return "text-yellow-600 border-yellow-600/40 bg-yellow-600/5"
+  }
 }
 
 export const dynamic = "force-dynamic"
@@ -29,6 +36,19 @@ const STATUS_LABELS: Record<string, string> = {
   confirmed: "Confirmado",
   cancelled: "Cancelado",
   expired: "Expirado",
+}
+
+function bookingStatusClass(status: string): string {
+  switch (status) {
+    case "confirmed":
+      return "text-green-600 border-green-600/40 bg-green-600/5"
+    case "cancelled":
+      return "bg-muted text-muted-foreground"
+    case "expired":
+      return "text-red-600 border-red-600/40 bg-red-600/5"
+    default:
+      return "text-yellow-600 border-yellow-600/40 bg-yellow-600/5"
+  }
 }
 
 type DetailPageProps = {
@@ -59,70 +79,77 @@ export default async function BookingDetailPage({ params }: DetailPageProps) {
   ])
 
   return (
-    <div style={{ display: "grid", gap: 24 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 16, flexWrap: "wrap" }}>
-        <div>
-          <Link href="/admin/ventas" className="muted" style={{ textDecoration: "none", fontSize: 13 }}>
-            ← Centro de Ventas
-          </Link>
-          <h1 style={{ fontSize: 28, margin: "8px 0 4px" }}>
-            <code style={{ fontSize: 22 }}>{booking.shortCode}</code>
-            <span className="muted" style={{ fontSize: 14, marginLeft: 12 }}>
-              · {STATUS_LABELS[booking.status] ?? booking.status}
-            </span>
-          </h1>
-          <p className="muted" style={{ margin: 0 }}>
-            Creado {booking.createdAt.toISOString().slice(0, 10)} · origen{" "}
-            <code>{booking.source}</code>
-            {booking.client ? (
-              <>
-                {" · "}
-                <Link href="/admin/clientes" style={{ textDecoration: "underline" }}>
-                  cliente del CRM: {booking.client.name}
-                </Link>
-              </>
-            ) : null}
-          </p>
+    <div className="p-8 bg-background min-h-full">
+      <div className="mb-8">
+        <Link href="/admin/ventas" className="no-underline inline-block mb-4">
+          <Button variant="outline" size="sm" className="gap-1.5">
+            <ArrowLeft className="w-3.5 h-3.5" />
+            Centro de Ventas
+          </Button>
+        </Link>
+        <div className="flex justify-between items-start gap-4 flex-wrap">
+          <div>
+            <div className="flex items-center gap-3 flex-wrap mb-2">
+              <code className="text-2xl font-bold text-primary font-mono">{booking.shortCode}</code>
+              <Badge variant="outline" className={bookingStatusClass(booking.status)}>
+                {STATUS_LABELS[booking.status] ?? booking.status}
+              </Badge>
+            </div>
+            <p className="text-muted-foreground text-sm">
+              Creado <span className="font-mono">{booking.createdAt.toISOString().slice(0, 10)}</span> · origen{" "}
+              <code className="px-1 py-0.5 rounded bg-muted text-xs">{booking.source}</code>
+              {booking.client ? (
+                <>
+                  {" · "}
+                  <Link href="/admin/clientes" className="underline">
+                    cliente del CRM: {booking.client.name}
+                  </Link>
+                </>
+              ) : null}
+            </p>
+          </div>
+          <form action={deleteBookingAction}>
+            <input type="hidden" name="id" value={booking.id} />
+            <Button type="submit" variant="destructive" className="gap-1.5">
+              <Trash2 className="w-3.5 h-3.5" />
+              Eliminar booking
+            </Button>
+          </form>
         </div>
-        <form action={deleteBookingAction}>
-          <input type="hidden" name="id" value={booking.id} />
-          <button
-            className="button secondary"
-            type="submit"
-            style={{ color: "#fb7185", borderColor: "rgba(251,113,133,0.4)" }}
-          >
-            Eliminar booking
-          </button>
-        </form>
       </div>
 
-      <div className="card" style={{ padding: 18, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-        <div>
-          <strong style={{ fontSize: 14 }}>Contrato</strong>
-          <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
-            {booking.contract ? (
-              <>
-                <span className={CONTRACT_STATUS_BADGE[booking.contract.status] ?? "badge muted"}>
-                  {CONTRACT_STATUS_LABELS[booking.contract.status] ?? booking.contract.status}
-                </span>
-                {" · "}emitido {booking.contract.createdAt.toISOString().slice(0, 10)}
-              </>
-            ) : (
-              "No emitido"
-            )}
+      <Card className="bg-white p-5 mb-6 flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+            <FileText className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="text-sm font-bold text-foreground">Contrato</div>
+            <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-2">
+              {booking.contract ? (
+                <>
+                  <Badge variant="outline" className={contractBadgeClass(booking.contract.status)}>
+                    {CONTRACT_STATUS_LABELS[booking.contract.status] ?? booking.contract.status}
+                  </Badge>
+                  <span>· emitido <span className="font-mono">{booking.contract.createdAt.toISOString().slice(0, 10)}</span></span>
+                </>
+              ) : (
+                "No emitido"
+              )}
+            </div>
           </div>
         </div>
         {booking.contract ? (
-          <Link href={`/admin/ventas/${booking.id}/contrato`} className="button">
-            Ver / firmar contrato
+          <Link href={`/admin/ventas/${booking.id}/contrato`} className="no-underline">
+            <Button className="font-bold">Ver / firmar contrato</Button>
           </Link>
         ) : (
           <form action={issueContractAction}>
             <input type="hidden" name="bookingId" value={booking.id} />
-            <button className="button" type="submit">Emitir contrato</button>
+            <Button type="submit" className="font-bold">Emitir contrato</Button>
           </form>
         )}
-      </div>
+      </Card>
 
       <BookingDetailForm
         booking={{

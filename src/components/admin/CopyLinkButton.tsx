@@ -1,6 +1,8 @@
 "use client"
 
 import { useState } from "react"
+import { Copy, Check } from "lucide-react"
+import { Button } from "@/components/ui/button"
 
 export function CopyLinkButton({ url, label = "Copiar link de firma" }: { url: string; label?: string }) {
   const [copied, setCopied] = useState(false)
@@ -28,13 +30,14 @@ export function CopyLinkButton({ url, label = "Copiar link de firma" }: { url: s
   }
 
   return (
-    <button
+    <Button
       type="button"
-      className="button secondary"
+      variant="outline"
       onClick={onCopy}
-      style={{ padding: "8px 14px", fontSize: 13 }}
+      className={copied ? "gap-1.5 text-green-600 border-green-600/30" : "gap-1.5"}
     >
-      {copied ? "✓ Copiado" : label}
-    </button>
+      {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+      {copied ? "Copiado" : label}
+    </Button>
   )
 }

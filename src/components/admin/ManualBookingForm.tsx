@@ -3,22 +3,37 @@
 import { useActionState } from "react"
 import { useFormStatus } from "react-dom"
 import { createBookingAction, type BookingActionState } from "@/app/admin/ventas/actions"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Button } from "@/components/ui/button"
 
 const initial: BookingActionState = { ok: false }
+const SELECT_CLASS =
+  "h-11 w-full rounded-xl border border-border/40 bg-card px-4 py-2 text-sm focus:border-primary/50 focus:ring-4 focus:ring-primary/10 outline-none disabled:opacity-50 transition-all"
 
 function Submit() {
   const { pending } = useFormStatus()
   return (
-    <button className="button" disabled={pending} type="submit">
+    <Button type="submit" disabled={pending} className="h-10 px-5 font-bold">
       {pending ? "Creando..." : "Crear cotización / booking"}
-    </button>
+    </Button>
   )
 }
 
 function FieldError({ name, errors }: { name: string; errors?: Record<string, string[]> }) {
   const msg = errors?.[name]?.[0]
   if (!msg) return null
-  return <span style={{ color: "#fb7185", fontSize: 12 }}>{msg}</span>
+  return <span className="text-red-600 text-xs">{msg}</span>
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="space-y-4">
+      <h3 className="text-base font-bold m-0 pb-2 border-b border-border/40">{title}</h3>
+      {children}
+    </section>
+  )
 }
 
 export type ManualBookingFormProps = {
@@ -30,118 +45,118 @@ export function ManualBookingForm({ clients, packages }: ManualBookingFormProps)
   const [state, formAction] = useActionState(createBookingAction, initial)
 
   return (
-    <form action={formAction} className="card" style={{ padding: 20, display: "grid", gap: 18 }}>
+    <form action={formAction} className="bg-white rounded-2xl border border-border/40 p-6 shadow-sm space-y-8">
       {state.message ? (
-        <p style={{ color: state.ok ? "#86efac" : "#fb7185", margin: 0, fontSize: 13 }}>{state.message}</p>
+        <div
+          className={`rounded-lg px-3 py-2 text-sm font-medium ${
+            state.ok
+              ? "bg-green-500/10 text-green-700 border border-green-500/30"
+              : "bg-red-500/10 text-red-700 border border-red-500/30"
+          }`}
+        >
+          {state.message}
+        </div>
       ) : null}
 
-      <section style={{ display: "grid", gap: 12 }}>
-        <h3 style={{ margin: 0, fontSize: 16 }}>Cliente</h3>
-        <div className="grid-2">
-          <div className="field">
-            <label>Cliente existente (opcional)</label>
-            <select name="clientId" defaultValue="">
+      <Section title="Cliente">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="clientId">Cliente existente (opcional)</Label>
+            <select id="clientId" name="clientId" defaultValue="" className={SELECT_CLASS}>
               <option value="">— Nuevo cliente, datos abajo —</option>
               {clients.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
+                <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
           </div>
-          <div className="field">
-            <label>Nombre del cliente</label>
-            <input name="clientName" placeholder="Si seleccionaste arriba, repite aquí" />
+          <div className="space-y-1.5">
+            <Label htmlFor="clientName">Nombre del cliente</Label>
+            <Input id="clientName" name="clientName" placeholder="Si seleccionaste arriba, repite aquí" />
             <FieldError name="clientName" errors={state.fieldErrors} />
           </div>
-          <div className="field">
-            <label>Email</label>
-            <input name="clientEmail" type="email" autoComplete="off" />
+          <div className="space-y-1.5">
+            <Label htmlFor="clientEmail">Email</Label>
+            <Input id="clientEmail" name="clientEmail" type="email" autoComplete="off" />
           </div>
-          <div className="field">
-            <label>Teléfono</label>
-            <input name="clientPhone" />
+          <div className="space-y-1.5">
+            <Label htmlFor="clientPhone">Teléfono</Label>
+            <Input id="clientPhone" name="clientPhone" />
           </div>
-          <div className="field">
-            <label>WhatsApp</label>
-            <input name="clientWhatsapp" placeholder="521..." />
+          <div className="space-y-1.5">
+            <Label htmlFor="clientWhatsapp">WhatsApp</Label>
+            <Input id="clientWhatsapp" name="clientWhatsapp" placeholder="521..." />
           </div>
         </div>
-      </section>
+      </Section>
 
-      <section style={{ display: "grid", gap: 12 }}>
-        <h3 style={{ margin: 0, fontSize: 16 }}>Paquete y evento</h3>
-        <div className="grid-2">
-          <div className="field">
-            <label>Paquete</label>
-            <select name="packageId" defaultValue="">
+      <Section title="Paquete y evento">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="packageId">Paquete</Label>
+            <select id="packageId" name="packageId" defaultValue="" className={SELECT_CLASS}>
               <option value="">— Custom / sin paquete —</option>
               {packages.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
+                <option key={p.id} value={p.id}>{p.name}</option>
               ))}
             </select>
           </div>
-          <div className="field">
-            <label>Tipo de evento</label>
-            <input name="venueType" placeholder="boda, corporativo, cumpleaños..." />
+          <div className="space-y-1.5">
+            <Label htmlFor="venueType">Tipo de evento</Label>
+            <Input id="venueType" name="venueType" placeholder="boda, corporativo, cumpleaños..." />
           </div>
-          <div className="field">
-            <label>Invitados aproximados</label>
-            <input name="guestCount" type="number" min={0} step="1" />
+          <div className="space-y-1.5">
+            <Label htmlFor="guestCount">Invitados aproximados</Label>
+            <Input id="guestCount" name="guestCount" type="number" min={0} step="1" />
           </div>
-          <div className="field">
-            <label>Fecha</label>
-            <input name="requestedDate" type="date" />
+          <div className="space-y-1.5">
+            <Label htmlFor="requestedDate">Fecha</Label>
+            <Input id="requestedDate" name="requestedDate" type="date" />
           </div>
-          <div className="field">
-            <label>Hora inicio</label>
-            <input name="startTime" type="time" />
+          <div className="space-y-1.5">
+            <Label htmlFor="startTime">Hora inicio</Label>
+            <Input id="startTime" name="startTime" type="time" />
           </div>
-          <div className="field">
-            <label>Hora fin</label>
-            <input name="endTime" type="time" />
+          <div className="space-y-1.5">
+            <Label htmlFor="endTime">Hora fin</Label>
+            <Input id="endTime" name="endTime" type="time" />
           </div>
         </div>
-      </section>
+      </Section>
 
-      <section style={{ display: "grid", gap: 12 }}>
-        <h3 style={{ margin: 0, fontSize: 16 }}>Ubicación</h3>
-        <div className="field">
-          <label>Dirección</label>
-          <input name="address" placeholder="Calle, número, colonia..." />
+      <Section title="Ubicación">
+        <div className="space-y-1.5">
+          <Label htmlFor="address">Dirección</Label>
+          <Input id="address" name="address" placeholder="Calle, número, colonia..." />
         </div>
-        <div className="grid-2">
-          <div className="field">
-            <label>Ciudad</label>
-            <input name="city" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="city">Ciudad</Label>
+            <Input id="city" name="city" />
           </div>
-          <div className="field">
-            <label>Estado</label>
-            <input name="state" />
+          <div className="space-y-1.5">
+            <Label htmlFor="state">Estado</Label>
+            <Input id="state" name="state" />
           </div>
         </div>
-        <div className="field">
-          <label>Maps link</label>
-          <input name="mapsLink" placeholder="https://maps.app.goo.gl/..." />
+        <div className="space-y-1.5">
+          <Label htmlFor="mapsLink">Maps link</Label>
+          <Input id="mapsLink" name="mapsLink" placeholder="https://maps.app.goo.gl/..." />
         </div>
-      </section>
+      </Section>
 
-      <section style={{ display: "grid", gap: 12 }}>
-        <h3 style={{ margin: 0, fontSize: 16 }}>Cobro</h3>
-        <div className="grid-3">
-          <div className="field">
-            <label>Monto base</label>
-            <input name="baseAmount" type="number" min={0} step="0.01" placeholder="0.00" />
+      <Section title="Cobro">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="baseAmount">Monto base</Label>
+            <Input id="baseAmount" name="baseAmount" type="number" min={0} step="0.01" placeholder="0.00" />
           </div>
-          <div className="field">
-            <label>Anticipo</label>
-            <input name="depositAmount" type="number" min={0} step="0.01" placeholder="0.00" />
+          <div className="space-y-1.5">
+            <Label htmlFor="depositAmount">Anticipo</Label>
+            <Input id="depositAmount" name="depositAmount" type="number" min={0} step="0.01" placeholder="0.00" />
           </div>
-          <div className="field">
-            <label>Método</label>
-            <select name="paymentMethod" defaultValue="">
+          <div className="space-y-1.5">
+            <Label htmlFor="paymentMethod">Método</Label>
+            <select id="paymentMethod" name="paymentMethod" defaultValue="" className={SELECT_CLASS}>
               <option value="">— ninguno aún —</option>
               <option value="transferencia">Transferencia</option>
               <option value="efectivo">Efectivo</option>
@@ -150,11 +165,16 @@ export function ManualBookingForm({ clients, packages }: ManualBookingFormProps)
             </select>
           </div>
         </div>
-      </section>
+      </Section>
 
-      <div className="field">
-        <label>Notas internas</label>
-        <textarea name="adminNote" placeholder="Detalles para el equipo, requisitos especiales..." />
+      <div className="space-y-1.5">
+        <Label htmlFor="adminNote">Notas internas</Label>
+        <Textarea
+          id="adminNote"
+          name="adminNote"
+          placeholder="Detalles para el equipo, requisitos especiales..."
+          rows={3}
+        />
       </div>
 
       <div>

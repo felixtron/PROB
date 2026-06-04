@@ -1,12 +1,16 @@
 import Link from "next/link"
 import { headers } from "next/headers"
 import { notFound } from "next/navigation"
+import { ArrowLeft, FileText, Ban } from "lucide-react"
 import { db } from "@/lib/db"
 import { resolveCurrentTenant } from "@/lib/admin-helpers"
 import { AdminSignContractForm } from "@/components/admin/AdminSignContractForm"
 import { PrintButton } from "@/components/admin/PrintButton"
 import { CopyLinkButton } from "@/components/admin/CopyLinkButton"
 import { voidContractAction } from "@/app/admin/ventas/[id]/contrato/actions"
+import { Card } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 
 export const dynamic = "force-dynamic"
 
@@ -18,12 +22,15 @@ const STATUS_LABELS: Record<string, string> = {
   void: "Anulado",
 }
 
-const STATUS_BADGE: Record<string, string> = {
-  draft: "badge warn",
-  signed_admin: "badge warn",
-  signed_client: "badge warn",
-  signed_both: "badge ok",
-  void: "badge err",
+function statusBadgeClass(status: string): string {
+  switch (status) {
+    case "signed_both":
+      return "text-green-600 border-green-600/40 bg-green-600/5"
+    case "void":
+      return "text-red-600 border-red-600/40 bg-red-600/5"
+    default:
+      return "text-yellow-600 border-yellow-600/40 bg-yellow-600/5"
+  }
 }
 
 type PageProps = {
@@ -48,73 +55,70 @@ export default async function ContractPage({ params }: PageProps) {
   const signUrl = host ? `${protocol}://${host}/firma/${contract.shortToken}` : `/firma/${contract.shortToken}`
 
   return (
-    <div style={{ display: "grid", gap: 24 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 16, flexWrap: "wrap" }}>
-        <div>
-          <Link href={`/admin/ventas/${booking.id}`} className="muted" style={{ textDecoration: "none", fontSize: 13 }}>
-            ← Booking <code>{booking.shortCode}</code>
-          </Link>
-          <h1 style={{ fontSize: 28, margin: "8px 0 4px" }}>Contrato</h1>
-          <p className="muted" style={{ margin: 0, fontSize: 13 }}>
-            <span className={STATUS_BADGE[contract.status] ?? "badge muted"}>
-              {STATUS_LABELS[contract.status] ?? contract.status}
-            </span>
-            {" · "}emitido {contract.createdAt.toISOString().slice(0, 10)}
-          </p>
-        </div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {contract.status !== "void" && !contract.clientSignedAt ? (
-            <CopyLinkButton url={signUrl} />
-          ) : null}
-          <PrintButton />
-          {contract.status !== "void" && contract.status !== "signed_both" ? (
-            <form action={voidContractAction} style={{ display: "inline" }}>
-              <input type="hidden" name="contractId" value={contract.id} />
-              <input type="hidden" name="bookingId" value={booking.id} />
-              <button
-                className="button secondary"
-                type="submit"
-                style={{ padding: "8px 14px", fontSize: 13, color: "#fb7185", borderColor: "rgba(251,113,133,0.4)" }}
-              >
-                Anular contrato
-              </button>
-            </form>
-          ) : null}
+    <div className="p-8 bg-background min-h-full">
+      <div className="mb-8">
+        <Link href={`/admin/ventas/${booking.id}`} className="no-underline inline-block mb-4">
+          <Button variant="outline" size="sm" className="gap-1.5">
+            <ArrowLeft className="w-3.5 h-3.5" />
+            Booking <code className="ml-1 font-mono text-xs">{booking.shortCode}</code>
+          </Button>
+        </Link>
+        <div className="flex justify-between items-start gap-4 flex-wrap">
+          <div>
+            <div className="flex items-center gap-3 flex-wrap mb-2">
+              <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                <FileText className="w-5 h-5" />
+              </div>
+              <h1 className="text-3xl font-bold text-foreground tracking-tight">Contrato</h1>
+              <Badge variant="outline" className={statusBadgeClass(contract.status)}>
+                {STATUS_LABELS[contract.status] ?? contract.status}
+              </Badge>
+            </div>
+            <p className="text-muted-foreground text-sm">
+              Emitido <span className="font-mono">{contract.createdAt.toISOString().slice(0, 10)}</span>
+            </p>
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            {contract.status !== "void" && !contract.clientSignedAt ? (
+              <CopyLinkButton url={signUrl} />
+            ) : null}
+            <PrintButton />
+            {contract.status !== "void" && contract.status !== "signed_both" ? (
+              <form action={voidContractAction} className="inline">
+                <input type="hidden" name="contractId" value={contract.id} />
+                <input type="hidden" name="bookingId" value={booking.id} />
+                <Button type="submit" variant="destructive" className="gap-1.5">
+                  <Ban className="w-3.5 h-3.5" />
+                  Anular contrato
+                </Button>
+              </form>
+            ) : null}
+          </div>
         </div>
       </div>
 
-      <div className="card" style={{ padding: 32, fontFamily: "Georgia, 'Times New Roman', serif", lineHeight: 1.7 }} id="print">
+      <Card className="bg-white p-10 mb-6 leading-relaxed" id="print">
         <pre
+          className="m-0 whitespace-pre-wrap text-foreground"
           style={{
-            margin: 0,
-            whiteSpace: "pre-wrap",
-            fontFamily: "inherit",
+            fontFamily: "Georgia, 'Times New Roman', serif",
             fontSize: 15,
-            color: "var(--foreground)",
+            lineHeight: 1.7,
           }}
         >
-{contract.legalSnapshot}
+          {contract.legalSnapshot}
         </pre>
 
-        <div
-          style={{
-            marginTop: 32,
-            paddingTop: 24,
-            borderTop: "1px solid var(--border)",
-            display: "grid",
-            gap: 14,
-            fontFamily: "var(--font-sans, system-ui)",
-            fontSize: 13,
-          }}
-        >
+        <div className="mt-8 pt-6 border-t border-border space-y-4 text-sm">
           <div>
             <strong>EL PRESTADOR · firma electrónica:</strong>
             {contract.adminSignedAt ? (
-              <span className="muted">
-                {" "}{contract.adminSignerName} · {contract.adminSignedAt.toISOString().replace("T", " ").slice(0, 19)} UTC
+              <span className="text-muted-foreground">
+                {" "}{contract.adminSignerName} ·{" "}
+                <span className="font-mono">{contract.adminSignedAt.toISOString().replace("T", " ").slice(0, 19)} UTC</span>
               </span>
             ) : (
-              <span className="muted"> pendiente</span>
+              <span className="text-muted-foreground"> pendiente</span>
             )}
           </div>
           <div>
@@ -122,11 +126,12 @@ export default async function ContractPage({ params }: PageProps) {
             {contract.clientSignedAt ? (
               <>
                 {" "}
-                <span className="muted">
-                  {contract.clientSignerName} · {contract.clientSignedAt.toISOString().replace("T", " ").slice(0, 19)} UTC
+                <span className="text-muted-foreground">
+                  {contract.clientSignerName} ·{" "}
+                  <span className="font-mono">{contract.clientSignedAt.toISOString().replace("T", " ").slice(0, 19)} UTC</span>
                 </span>
                 {contract.clientSignatureDataUrl ? (
-                  <div style={{ marginTop: 10, background: "#ffffff", padding: 10, borderRadius: 8, display: "inline-block" }}>
+                  <div className="mt-3 bg-white p-2.5 rounded-lg inline-block border border-border">
                     {/* eslint-disable-next-line @next/next/no-img-element -- inline data URL */}
                     <img
                       src={contract.clientSignatureDataUrl}
@@ -137,11 +142,13 @@ export default async function ContractPage({ params }: PageProps) {
                 ) : null}
               </>
             ) : (
-              <span className="muted"> pendiente · el cliente firma desde el link que le mandamos por WhatsApp</span>
+              <span className="text-muted-foreground">
+                {" "}pendiente · el cliente firma desde el link que le mandamos por WhatsApp
+              </span>
             )}
           </div>
         </div>
-      </div>
+      </Card>
 
       {contract.status !== "void" && !contract.adminSignedAt ? (
         <AdminSignContractForm
@@ -160,11 +167,10 @@ function PrintStyles() {
   return (
     <style>{`
       @media print {
-        .admin-shell > aside,
-        header.page-shell,
-        .button,
+        aside,
+        header,
+        button,
         [role="alert"] { display: none !important; }
-        .admin-shell { grid-template-columns: 1fr !important; padding: 0 !important; }
         body, html { background: #fff !important; color: #000 !important; }
         #print { box-shadow: none !important; border: none !important; padding: 0 !important; }
         #print pre { color: #000 !important; }
