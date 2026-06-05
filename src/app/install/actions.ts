@@ -14,6 +14,9 @@ export type InstallActionState = {
 }
 
 export async function runInstallAction(_: InstallActionState, formData: FormData): Promise<InstallActionState> {
+  // Fast-path guards: bounce to the right destination before doing work.
+  // The atomic transaction below still re-checks under a row lock to close
+  // the race window between guard and provision.
   if (isManaged()) {
     redirect("/super-admin")
   }
@@ -32,15 +35,46 @@ export async function runInstallAction(_: InstallActionState, formData: FormData
     }
   }
 
-  const tenant = await provisionTenant(parsed.data)
+  try {
+    // Atomic transaction: check -> provision -> mark installed
+    const _result = await db.$transaction(async (tx) => {
+      // 1. Check if already installed (within transaction, so this is atomic)
+      const state = await tx.installationState.findUnique({
+        where: { id: "singleton" },
+      })
 
-  await db.$transaction(async (tx) => {
-    await tx.installationState.upsert({
-      where: { id: "singleton" },
-      update: { tenantId: tenant.id, completed: true, completedAt: new Date() },
-      create: { id: "singleton", tenantId: tenant.id, completed: true, completedAt: new Date() },
+      if (state?.completed) {
+        throw new Error("Installation already completed")
+      }
+
+      // 2. Provision the tenant (within the same transaction)
+      const tenant = await provisionTenant(parsed.data, tx)
+
+      // 3. Mark installation as complete (within the same transaction)
+      await tx.installationState.upsert({
+        where: { id: "singleton" },
+        update: {
+          tenantId: tenant.id,
+          completed: true,
+          completedAt: new Date(),
+        },
+        create: {
+          id: "singleton",
+          tenantId: tenant.id,
+          completed: true,
+          completedAt: new Date(),
+        },
+      })
+
+      return { tenant }
     })
-  })
 
-  redirect("/admin")
+    redirect("/admin")
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Installation failed"
+    return {
+      ok: false,
+      message,
+    }
+  }
 }

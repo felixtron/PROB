@@ -581,6 +581,8 @@ model Payment {
   updatedAt               DateTime  @updatedAt
 
   @@index([tenantId])
+  @@index([customerEmail])
+  @@index([createdAt])
 }
 
 model ServicePackage {
@@ -706,4 +708,6 @@ model TenantProvisioningJob {
 
   @@index([tenantId])
   @@index([templateId])
+  @@index([createdAt])
+  @@index([status])
 }
